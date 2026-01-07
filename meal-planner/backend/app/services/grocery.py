@@ -43,7 +43,8 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
         result.append(schemas.GroceryItem(
             name=name,
             unit=unit,
-            quantity=qty
+            quantity=qty,
+            original_ingredients=["Generated"]
         ))
     
     # Add manual items

@@ -62,3 +62,21 @@ class GroceryManualItem(Base):
     quantity = Column(Numeric(10, 2), default=1)
     unit = Column(String(50), nullable=True)
     is_checked = Column(Boolean, default=False)
+    category = Column(String(50), default="Divers")
+
+class GroceryLibraryItem(Base):
+    __tablename__ = "grocery_library"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), unique=True, index=True)
+    category = Column(String(50), default="Divers")
+    default_unit = Column(String(50), nullable=True)
+    usage_count = Column(Integer, default=1)
+    last_used = Column(Date, nullable=True)
+
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True)
+    hashed_password = Column(String(255))

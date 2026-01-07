@@ -73,7 +73,7 @@
     printList() {
         window.print();
     }
-}" x-effect="updateWeek()">
+}" x-init="init()">
 
     <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm ignore-print">
         <div class="container mx-auto flex justify-between items-center p-4">
@@ -139,27 +139,96 @@
             </div>
 
             <!-- Manual Add Form -->
-            <div x-show="showAdd" x-transition
-                class="mt-6 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 flex flex-col md:flex-row gap-4 items-end">
-                <div class="flex-grow">
-                    <label class="block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1"
-                        x-text="$store.i18n.t('item_name')">Item Name</label>
-                    <input type="text" x-model="newItem.name"
-                        class="w-full border border-emerald-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+            <!-- Add Item Modal -->
+            <div x-show="showAdd" class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                style="display: none;">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showAdd = false"></div>
+                <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all"
+                    x-data="{ 
+                 newItem: { name: '', quantity: 1, unit: '', category: 'Divers' },
+                 suggestions: [],
+                 categories: ['Fruits & Légumes', 'Viandes & Poissons', 'Frais', 'Épicerie', 'Boissons', 'Hygiène', 'Maison', 'Divers'],
+                 selectSuggestion(s) {
+                     this.newItem.name = s.name;
+                     this.newItem.category = s.category;
+                     if(s.default_unit) this.newItem.unit = s.default_unit;
+                     this.suggestions = [];
+                 }
+             }">
+
+                    <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <span>✨</span> Le Frigo Intelligent
+                        </h3>
+                        <button @click="showAdd = false" class="text-slate-400 hover:text-slate-600">✕</button>
+                    </div>
+
+                    <div class="p-6 space-y-6">
+                        <!-- Name with Autocomplete -->
+                        <div class="relative">
+                            <label
+                                class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Produit</label>
+                            <input type="text" x-model="newItem.name"
+                                @input="suggestions = $store.grocery.getSuggestions($event.target.value)"
+                                placeholder="Ex: Lait, Savon..."
+                                class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-lg">
+
+                            <!-- Suggestions Dropdown -->
+                            <div x-show="suggestions.length > 0"
+                                class="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
+                                <template x-for="s in suggestions">
+                                    <div @click="selectSuggestion(s)"
+                                        class="p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-50 last:border-0 flex justify-between items-center group">
+                                        <span class="font-medium text-slate-700" x-text="s.name"></span>
+                                        <span
+                                            class="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full group-hover:bg-emerald-100 group-hover:text-emerald-700"
+                                            x-text="s.category"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <label
+                                    class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Qté</label>
+                                <input type="number" x-model="newItem.quantity"
+                                    class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-center">
+                            </div>
+                            <div class="flex-1">
+                                <label
+                                    class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Unité</label>
+                                <input type="text" x-model="newItem.unit" placeholder="L, kg..."
+                                    class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Category Tags -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Rayon /
+                                Catégorie</label>
+                            <div class="flex flex-wrap gap-2">
+                                <template x-for="cat in categories">
+                                    <button @click="newItem.category = cat"
+                                        :class="newItem.category === cat ? 'bg-emerald-500 text-white shadow-emerald-500/30 shadow-lg scale-105' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                        class="px-3 py-1.5 rounded-lg text-sm font-bold transition-all transform duration-200"
+                                        x-text="cat"></button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <button @click="async () => { 
+                        if(await $store.grocery.addManual(newItem)) { 
+                            showAdd = false; 
+                            generateList(); 
+                            newItem = { name: '', quantity: 1, unit: '', category: 'Divers' };
+                        }
+                    }" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2">
+                            <span>➕</span> Ajouter à la liste
+                        </button>
+
+                    </div>
                 </div>
-                <div class="w-24">
-                    <label class="block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1">Qty</label>
-                    <input type="number" x-model="newItem.quantity"
-                        class="w-full border border-emerald-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
-                </div>
-                <div class="w-24">
-                    <label class="block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1">Unit</label>
-                    <input type="text" x-model="newItem.unit"
-                        class="w-full border border-emerald-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
-                </div>
-                <button @click="addManualItem()"
-                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-md transition"
-                    x-text="$store.i18n.t('save')">Save</button>
             </div>
         </div>
 

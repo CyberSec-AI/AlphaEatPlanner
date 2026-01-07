@@ -23,7 +23,7 @@ def get_grocery_list(start: date, end: date, db: Session = Depends(get_db)):
             name=m.name,
             quantity=m.quantity,
             unit=m.unit if m.unit else "",
-            original_ingredients=["Manual Item"] # Marker
+            original_ingredients=["Manual Item", m.category] # Using list to pass category hackily or update schema
         ))
     
     # Combine or just append? 
@@ -34,9 +34,37 @@ def get_grocery_list(start: date, end: date, db: Session = Depends(get_db)):
 
 @router.post("/manual", response_model=schemas.GroceryManualItem)
 def create_manual_item(item: schemas.GroceryManualItemCreate, db: Session = Depends(get_db)):
-    return crud.create_manual_grocery_item(db, item)
+    # 1. Create the manual item in the grocery list
+    new_item = crud.create_manual_grocery_item(db, item)
+    
+    # 2. Smart Save: Add or Update into Library
+    # Check if exists
+    existing_lib = db.query(models.GroceryLibraryItem).filter(models.GroceryLibraryItem.name == item.name).first()
+    if existing_lib:
+        existing_lib.usage_count += 1
+        existing_lib.last_used = date.today()
+        # Update category if user changed it? Let's assume most recent category is preferred.
+        existing_lib.category = item.category
+        if item.unit:
+             existing_lib.default_unit = item.unit
+    else:
+        new_lib = models.GroceryLibraryItem(
+            name=item.name,
+            category=item.category,
+            default_unit=item.unit,
+            last_used=date.today()
+        )
+        db.add(new_lib)
+    
+    db.commit()
+    return new_item
 
 @router.delete("/manual/{item_id}")
 def delete_manual_item(item_id: int, db: Session = Depends(get_db)):
     crud.delete_manual_grocery_item(db, item_id)
     return {"status": "ok"}
+
+@router.get("/library", response_model=List[schemas.GroceryLibraryItem])
+def get_grocery_library(db: Session = Depends(get_db)):
+    # Return items sorted by usage count (most frequent first)
+    return db.query(models.GroceryLibraryItem).order_by(models.GroceryLibraryItem.usage_count.desc()).all()

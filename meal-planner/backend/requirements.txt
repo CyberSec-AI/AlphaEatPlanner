@@ -7,3 +7,5 @@ pydantic
 email-validator
 python-multipart
 cryptography
+python-jose[cryptography]
+passlib[bcrypt]

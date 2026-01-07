@@ -75,6 +75,7 @@ class GroceryManualItemBase(BaseModel):
     quantity: Decimal
     unit: Optional[str] = None
     is_checked: bool = False
+    category: str = "Divers"
 
 class GroceryManualItemCreate(GroceryManualItemBase):
     pass
@@ -82,5 +83,14 @@ class GroceryManualItemCreate(GroceryManualItemBase):
 class GroceryManualItem(GroceryManualItemBase):
     id: int
 
+    class Config:
+        from_attributes = True
+
+class GroceryLibraryItem(BaseModel):
+    id: int
+    name: str
+    category: str
+    default_unit: Optional[str] = None
+    
     class Config:
         from_attributes = True

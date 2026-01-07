@@ -52,6 +52,18 @@
                     x-text="$store.i18n.lang">
                     FR
                 </button>
+
+                <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                <!-- Logout -->
+                <button @click="$store.auth.logout()" class="text-slate-400 hover:text-rose-500 transition"
+                    title="Se déconnecter">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                        </path>
+                    </svg>
+                </button>
             </div>
         </div>
     </nav>
@@ -74,13 +86,13 @@
             </div>
 
             <h1 class="text-6xl md:text-7xl font-black text-slate-800 tracking-tighter mb-8 leading-tight">
-                <span class="block text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-teal-600"
-                    x-text="$store.i18n.t('welcome')">Welcome</span>
+                <span class="block text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-teal-600">
+                    Bienvenue
+                </span>
             </h1>
 
-            <p class="text-slate-500 text-xl md:text-2xl mb-12 font-light max-w-2xl leading-relaxed"
-                x-text="$store.i18n.t('welcome_sub')">
-                Organize your meals, manage your recipes, and generate your grocery lists effortlessly.
+            <p class="text-slate-500 text-xl md:text-2xl mb-12 font-light max-w-2xl leading-relaxed">
+                Organisez vos repas, gérez vos recettes et générez vos listes simplement.
             </p>
 
             <div class="flex flex-col sm:flex-row justify-center gap-6 w-full max-w-md">
@@ -90,15 +102,14 @@
                         class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer">
                     </div>
                     <span class="flex items-center justify-center gap-3">
-                        <span class="text-xl">🍳</span> <span x-text="$store.i18n.t('browse_recipes')">Browse
-                            Recipes</span>
+                        <span class="text-xl">🍳</span> <span>Voir les Recettes</span>
                     </span>
                 </a>
 
                 <a href="planner.html"
                     class="flex-1 group relative px-8 py-5 bg-white text-emerald-600 border border-emerald-100 rounded-2xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:bg-emerald-50">
                     <span class="flex items-center justify-center gap-3">
-                        <span class="text-xl">📅</span> <span x-text="$store.i18n.t('plan_week')">Plan Your Week</span>
+                        <span class="text-xl">📅</span> <span>Planifier la Semaine</span>
                     </span>
                 </a>
             </div>
