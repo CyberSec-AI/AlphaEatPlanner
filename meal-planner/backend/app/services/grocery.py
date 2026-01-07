@@ -45,5 +45,15 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
             unit=unit,
             quantity=qty
         ))
-        
+    
+    # Add manual items
+    # Note: Logic moved to route handler for simplicity to avoid circular imports if we used crud here,
+    # OR we can inject db session here. Since route calls this, route can also call crud.get_manual...
+    # BUT user asked for "generated form planning AND manual".
+    # The route implementation I did in previous step combines them.
+    # So this function can stay focused on PLANNED items only.
+    # WAIT, if I want to merge them nicely (same ingredient name), I should do it here.
+    # But for now, separate lists appended in route is safer/easier.
+    # I will keep this file focused on RECIPE ingredients aggregation.
+    
     return sorted(result, key=lambda x: x.name)

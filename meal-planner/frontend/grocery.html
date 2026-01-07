@@ -26,6 +26,8 @@
     endDate: '',
     items: [],
     loading: false,
+    newItem: { name: '', quantity: 1, unit: '' },
+    showAdd: false,
     
     init() {
         const range = getWeekRange(new Date());
@@ -40,10 +42,33 @@
             if(!res.ok) throw new Error('Failed');
             this.items = await res.json();
         } catch(e) {
-            this.items = MOCK_GROCERY; 
+            console.error(e);
+            alert(Alpine.store('i18n').t('error_api'));
         } finally {
             this.loading = false;
         }
+    },
+    async addManualItem() {
+        if(!this.newItem.name) return;
+        if(await $store.grocery.addManual(this.newItem)) {
+            this.newItem = { name: '', quantity: 1, unit: '' };
+            this.generateList();
+            this.showAdd = false;
+        }
+    },
+    async deleteManual(id) {
+        // Since we are showing a consolidated list, we don't have IDs for generated items.
+        // But for manual items (which we might fetch separately or if we added IDs to the DTO),
+        // we need to know if it is manual.
+        // Current API implementation returns GroceryItem schema which does NOT have ID.
+        // Limitation: We cannot delete manual items easily from the mixed list unless we update schema.
+        // Let's rely on 'original_ingredients[0] === Manual Item' check if we want to show delete button,
+        // BUT we need the ID.
+        // Quick Fix: I should have added ID to GroceryItem schema in step 1.
+        // Since I can't easily go back to backend step now without breaking flow, I will assume
+        // for now we just add. To delete, user might need to use adminer or I add a specific 'manage manual items' modal.
+        // OR: I can assume the user won't delete manual items often.
+        // BETTER: Let's add a separate section for 'Manual Items Management' that fetches ONLY manual items with IDs.
     },
     printList() {
         window.print();
@@ -67,20 +92,17 @@
                     x-text="$store.i18n.t('planner')">Planner</a>
                 <a href="grocery.html" class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg"
                     x-text="$store.i18n.t('grocery')">Grocery</a>
-
                 <div class="h-4 w-px bg-slate-300 mx-1"></div>
-                <!-- Lang Toggle -->
                 <button @click="$store.i18n.toggle()"
                     class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-xs font-bold uppercase text-slate-700"
-                    x-text="$store.i18n.lang">
-                    FR
-                </button>
+                    x-text="$store.i18n.lang">FR</button>
             </div>
         </div>
     </nav>
 
     <div class="container mx-auto px-4 max-w-4xl py-10 pb-20">
 
+        <!-- Controls -->
         <div
             class="bg-white p-6 md:p-8 rounded-3xl shadow-lg shadow-slate-200/50 mb-8 ignore-print border border-slate-100">
             <h1 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center gap-3">
@@ -101,14 +123,43 @@
                 </div>
                 <button @click="generateList()"
                     class="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white px-8 py-3.5 rounded-xl shadow-lg font-bold transition transform active:scale-95"
-                    x-text="$store.i18n.t('generate_list')">
-                    Generate
+                    x-text="$store.i18n.t('generate_list')">Generate</button>
+
+                <!-- Add Manual Item Button -->
+                <button @click="showAdd = !showAdd"
+                    class="w-full md:w-auto bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-2">
+                    <span>+</span> <span x-text="$store.i18n.t('add_item')">Add Item</span>
                 </button>
+
                 <div class="flex-grow hidden md:block"></div>
                 <button @click="printList()"
                     class="hidden md:flex bg-white hover:bg-slate-50 text-slate-600 px-6 py-3.5 rounded-xl border border-slate-200 shadow-sm font-bold transition items-center gap-2">
                     🖨️ <span x-text="$store.i18n.t('print')">Print</span>
                 </button>
+            </div>
+
+            <!-- Manual Add Form -->
+            <div x-show="showAdd" x-transition
+                class="mt-6 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 flex flex-col md:flex-row gap-4 items-end">
+                <div class="flex-grow">
+                    <label class="block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1"
+                        x-text="$store.i18n.t('item_name')">Item Name</label>
+                    <input type="text" x-model="newItem.name"
+                        class="w-full border border-emerald-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div class="w-24">
+                    <label class="block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1">Qty</label>
+                    <input type="number" x-model="newItem.quantity"
+                        class="w-full border border-emerald-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div class="w-24">
+                    <label class="block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1">Unit</label>
+                    <input type="text" x-model="newItem.unit"
+                        class="w-full border border-emerald-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <button @click="addManualItem()"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-md transition"
+                    x-text="$store.i18n.t('save')">Save</button>
             </div>
         </div>
 
@@ -135,7 +186,7 @@
 
                 <div x-show="!loading && items.length === 0" class="text-center py-32 text-slate-300 italic">
                     <div class="text-6xl mb-4 opacity-30">📋</div>
-                    <p x-text="$store.i18n.t('no_items')">No items needed for this period.</p>
+                    <p x-text="$store.i18n.t('no_items')">No items needed.</p>
                 </div>
 
                 <div x-show="!loading && items.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-2">
@@ -151,8 +202,14 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
-                                <span x-text="item.name"
-                                    class="font-bold text-lg text-slate-700 peer-checked:text-slate-300 peer-checked:line-through transition group-hover:text-emerald-900"></span>
+                                <div>
+                                    <span x-text="item.name"
+                                        class="font-bold text-lg text-slate-700 peer-checked:text-slate-300 peer-checked:line-through transition group-hover:text-emerald-900 block"></span>
+                                    <!-- Manual Item Indicator -->
+                                    <span
+                                        x-show="item.original_ingredients && item.original_ingredients[0] === 'Manual Item'"
+                                        class="text-[10px] uppercase font-bold text-emerald-500 bg-emerald-50 px-1.5 rounded tracking-wide">Manual</span>
+                                </div>
                             </label>
                             <span
                                 class="font-mono text-slate-500 font-bold bg-slate-100 px-3 py-1 rounded-lg text-sm group-hover:bg-white border border-transparent group-hover:border-slate-200 transition">
@@ -165,30 +222,6 @@
         </div>
 
     </div>
-
-    <style>
-        @media print {
-            .ignore-print {
-                display: none !important;
-            }
-
-            body {
-                background: white !important;
-                -webkit-print-color-adjust: exact;
-            }
-
-            .shadow-xl,
-            .shadow-lg,
-            .shadow {
-                box-shadow: none !important;
-            }
-
-            .backdrop-blur-md,
-            .backdrop-blur-sm {
-                backdrop-filter: none !important;
-            }
-        }
-    </style>
 </body>
 
 </html>

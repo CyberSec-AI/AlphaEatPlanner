@@ -16,9 +16,9 @@ def create_recipe(db: Session, recipe: schemas.RecipeCreate):
         title=recipe.title,
         description=recipe.description,
         default_servings=recipe.default_servings,
-        is_favorite=recipe.is_favorite,
         rating=recipe.rating,
         is_vegetarian=recipe.is_vegetarian,
+        image_url=recipe.image_url,
         tags=recipe.tags
     )
     db.add(db_recipe)
@@ -50,6 +50,7 @@ def update_recipe(db: Session, recipe_id: int, recipe_update: schemas.RecipeUpda
     db_recipe.is_favorite = recipe_update.is_favorite
     db_recipe.rating = recipe_update.rating
     db_recipe.is_vegetarian = recipe_update.is_vegetarian
+    db_recipe.image_url = recipe_update.image_url
     db_recipe.tags = recipe_update.tags
     
     if recipe_update.ingredients is not None:
@@ -88,7 +89,8 @@ def create_meal_plan_item(db: Session, item: schemas.MealPlanItemCreate):
     db_item = models.MealPlanItem(
         date=item.date,
         recipe_id=item.recipe_id,
-        servings=item.servings
+        servings=item.servings,
+        meal_type=item.meal_type
     )
     db.add(db_item)
     db.commit()
@@ -100,4 +102,35 @@ def delete_meal_plan_item(db: Session, item_id: int):
     if db_item:
         db.delete(db_item)
         db.commit()
+    return db_item
+
+# Manual Grocery Items
+def get_manual_grocery_items(db: Session):
+    return db.query(models.GroceryManualItem).all()
+
+def create_manual_grocery_item(db: Session, item: schemas.GroceryManualItemCreate):
+    db_item = models.GroceryManualItem(
+        name=item.name,
+        quantity=item.quantity,
+        unit=item.unit,
+        is_checked=item.is_checked
+    )
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+def delete_manual_grocery_item(db: Session, item_id: int):
+    db_item = db.query(models.GroceryManualItem).filter(models.GroceryManualItem.id == item_id).first()
+    if db_item:
+        db.delete(db_item)
+        db.commit()
+    return db_item
+
+def toggle_manual_grocery_item(db: Session, item_id: int):
+    db_item = db.query(models.GroceryManualItem).filter(models.GroceryManualItem.id == item_id).first()
+    if db_item:
+        db_item.is_checked = not db_item.is_checked
+        db.commit()
+        db.refresh(db_item)
     return db_item

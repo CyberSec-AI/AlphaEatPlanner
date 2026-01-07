@@ -1,23 +1,5 @@
 const API_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
 
-// Mock Data for Design Preview
-const MOCK_RECIPES = [
-    { id: 1, title: "Spaghetti Carbonara", description: "Authentic Italian pasta", default_servings: 2, rating: 5, is_vegetarian: false, ingredients: [{ name: "Spaghetti", quantity: 200, unit: "g" }, { name: "Eggs", quantity: 2, unit: "pcs" }] },
-    { id: 2, title: "Greek Salad", description: "Fresh garden salad", default_servings: 1, rating: 4, is_vegetarian: true, ingredients: [{ name: "Cucumber", quantity: 1, unit: "pcs" }, { name: "Feta", quantity: 100, unit: "g" }] },
-    { id: 3, title: "Beef Stew", description: "Slow cooked beef", default_servings: 4, rating: 3, is_vegetarian: false, ingredients: [{ name: "Beef", quantity: 500, unit: "g" }, { name: "Carrots", quantity: 3, unit: "pcs" }] }
-];
-
-const MOCK_PLAN = [
-    { id: 1, date: new Date().toISOString().split('T')[0], recipe: MOCK_RECIPES[0], servings: 2 },
-    { id: 2, date: new Date(Date.now() + 86400000).toISOString().split('T')[0], recipe: MOCK_RECIPES[1], servings: 1 }
-];
-
-const MOCK_GROCERY = [
-    { name: "Spaghetti", quantity: 200, unit: "g" },
-    { name: "Eggs", quantity: 2, unit: "pcs" },
-    { name: "Cucumber", quantity: 1, unit: "pcs" }
-];
-
 const TRANSLATIONS = {
     en: {
         title: "Meal Planner",
@@ -47,7 +29,17 @@ const TRANSLATIONS = {
         no_items: "No items needed.",
         vegetarian: "Vegetarian",
         is_vegetarian_label: "Is this recipe vegetarian?",
-        delete_confirm: "Are you sure you want to delete this?"
+        delete_confirm: "Are you sure you want to delete this?",
+        breakfast: "Breakfast",
+        lunch: "Lunch",
+        dinner: "Dinner",
+        meal_type: "Meal Type",
+        leftovers_label: "Cook enough for leftovers (Lunch tomorrow)",
+        image_url: "Image URL (Optional)",
+        manual_items: "Manual Items",
+        add_item: "Add Item",
+        item_name: "Item Name",
+        error_api: "Connection Error: Could not save/load data. Please check your internet or server."
     },
     fr: {
         title: "Planificateur de Repas",
@@ -77,7 +69,17 @@ const TRANSLATIONS = {
         no_items: "Aucun article nécessaire.",
         vegetarian: "Végétarien",
         is_vegetarian_label: "Cette recette est-elle végétarienne ?",
-        delete_confirm: "Êtes-vous sûr de vouloir supprimer ceci ?"
+        delete_confirm: "Êtes-vous sûr de vouloir supprimer ceci ?",
+        breakfast: "Petit Déjeuner",
+        lunch: "Déjeuner",
+        dinner: "Dîner",
+        meal_type: "Type de Repas",
+        leftovers_label: "Cuisiner pour les restes (Demain midi)",
+        image_url: "URL Image (Optionnel)",
+        manual_items: "Articles Manuels",
+        add_item: "Ajouter Article",
+        item_name: "Nom de l'article",
+        error_api: "Erreur de Connexion : Impossible de sauvegarder/charger les données. Vérifiez votre serveur."
     }
 };
 
@@ -99,8 +101,9 @@ document.addEventListener('alpine:init', () => {
                 if (!res.ok) throw new Error('Failed');
                 this.list = await res.json();
             } catch (e) {
-                console.warn("API unavailable, using mock data");
-                this.list = MOCK_RECIPES;
+                console.error(e);
+                alert(Alpine.store('i18n').t('error_api'));
+                this.list = [];
             } finally {
                 this.loading = false;
             }
@@ -114,9 +117,8 @@ document.addEventListener('alpine:init', () => {
                 });
                 if (res.ok) { this.fetch(); return true; }
             } catch (e) {
-                recipe.id = Math.random();
-                this.list.push(recipe);
-                return true;
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
             }
             return false;
         },
@@ -125,19 +127,18 @@ document.addEventListener('alpine:init', () => {
             try {
                 const res = await fetch(`${API_URL}/recipes/${id}`, { method: 'DELETE' });
                 if (res.ok) this.fetch();
+                else throw new Error("Delete failed");
             } catch (e) {
-                this.list = this.list.filter(r => r.id !== id);
+                alert(Alpine.store('i18n').t('error_api'));
             }
         },
         async updateRating(id, rating) {
-            const recipe = this.list.find(r => r.id === id);
-            if (recipe) recipe.rating = rating;
-
             try {
                 const res = await fetch(`${API_URL}/recipes/${id}`);
                 if (res.ok) {
                     const fullRecipe = await res.json();
                     fullRecipe.rating = rating;
+                    // Fix ingredients structure for update if needed
                     fullRecipe.ingredients = fullRecipe.ingredients.map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit }));
                     await fetch(`${API_URL}/recipes/${id}`, {
                         method: 'PUT',
@@ -145,7 +146,7 @@ document.addEventListener('alpine:init', () => {
                         body: JSON.stringify(fullRecipe)
                     });
                 }
-            } catch (e) { }
+            } catch (e) { console.error("Rating update failed", e); }
         }
     });
 
@@ -158,32 +159,85 @@ document.addEventListener('alpine:init', () => {
                 if (!res.ok) throw new Error('Failed');
                 this.weekItems = await res.json();
             } catch (e) {
-                this.weekItems = MOCK_PLAN;
+                console.error(e);
+                alert(Alpine.store('i18n').t('error_api'));
+                this.weekItems = [];
             }
         },
-        async add(item) {
+        async add(item, withLeftovers = false) {
             try {
+                // Main Item
                 const res = await fetch(`${API_URL}/meal-plan/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(item)
                 });
-                return res.ok;
-            } catch (e) {
-                const recipe = MOCK_RECIPES.find(r => r.id === item.recipe_id);
-                this.weekItems.push({ ...item, id: Math.random(), recipe: recipe });
+
+                if (!res.ok) throw new Error('Failed main item');
+
+                // Leftovers Logic (Next Day Lunch)
+                if (withLeftovers) {
+                    const nextDay = new Date(item.date);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    const leftoverItem = {
+                        ...item,
+                        date: nextDay.toISOString().split('T')[0],
+                        meal_type: 'lunch'
+                    };
+                    await fetch(`${API_URL}/meal-plan/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(leftoverItem)
+                    });
+                }
+
                 return true;
+            } catch (e) {
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
             }
         },
         async remove(id) {
             if (!confirm(Alpine.store('i18n').t('delete_confirm'))) return false;
             try {
                 const res = await fetch(`${API_URL}/meal-plan/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Failed');
+                return true;
+            } catch (e) {
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
+            }
+        }
+    });
+
+    Alpine.store('grocery', {
+        manualItems: [],
+        async fetchManual() {
+            try {
+                // Note: This logic might be redundant if the main grocery list endpoint already returns combined items.
+                // However, for adding/deleting SPECIFIC manual items, we might need this list separately or parsed from the main list.
+                // Given the route implementation returns a combined list with "Manual Item" marker, 
+                // let's rely on the main list for display, but here we provide helpers for ADD/DELETE Actions.
+            } catch (e) { }
+        },
+        async addManual(item) {
+            try {
+                const res = await fetch(`${API_URL}/grocery-list/manual`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
                 return res.ok;
             } catch (e) {
-                this.weekItems = this.weekItems.filter(i => i.id !== id);
-                return true;
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
             }
+        },
+        async removeManual(id) {
+            try {
+                const res = await fetch(`${API_URL}/grocery-list/manual/${id}`, { method: 'DELETE' });
+                return res.ok;
+            } catch (e) { return false; }
         }
     });
 });

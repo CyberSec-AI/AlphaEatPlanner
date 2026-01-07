@@ -27,6 +27,7 @@ class RecipeBase(BaseModel):
     is_favorite: bool = False
     rating: int = 0
     is_vegetarian: bool = False
+    image_url: Optional[str] = None
     tags: List[str] = []
 
 class RecipeCreate(RecipeBase):
@@ -47,6 +48,7 @@ class MealPlanItemBase(BaseModel):
     date: date
     recipe_id: int
     servings: int
+    meal_type: str = "dinner"
 
 class MealPlanItemCreate(MealPlanItemBase):
     pass
@@ -67,3 +69,18 @@ class GroceryItem(BaseModel):
     quantity: Decimal
     unit: str
     original_ingredients: Optional[List[str]] = None
+
+class GroceryManualItemBase(BaseModel):
+    name: str
+    quantity: Decimal
+    unit: Optional[str] = None
+    is_checked: bool = False
+
+class GroceryManualItemCreate(GroceryManualItemBase):
+    pass
+
+class GroceryManualItem(GroceryManualItemBase):
+    id: int
+
+    class Config:
+        from_attributes = True

@@ -28,7 +28,8 @@
     days: [],
     showModal: false,
     selectedDate: '',
-    newItem: { recipe_id: '', servings: 2 },
+    defaultMealType: 'dinner',
+    newItem: { recipe_id: '', servings: 2, meal_type: 'dinner', with_leftovers: false },
     
     init() {
         this.updateWeek();
@@ -60,21 +61,32 @@
         this.currentDate.setDate(this.currentDate.getDate() + 7);
         this.updateWeek();
     },
-    openAddModal(dateStr) {
+    openAddModal(dateStr, mealType) {
         this.selectedDate = dateStr;
+        this.newItem = { 
+            recipe_id: '', 
+            servings: 2, 
+            meal_type: mealType || 'dinner',
+            with_leftovers: false 
+        };
         this.showModal = true;
     },
-    getItemsForDate(dateStr) {
-        return $store.planner.weekItems.filter(item => item.date === dateStr);
+    getItemsForDateAndType(dateStr, mealType) {
+        return $store.planner.weekItems.filter(item => 
+            item.date === dateStr && (item.meal_type === mealType || (!item.meal_type && mealType === 'dinner'))
+        );
     },
     async submitItem() {
         if(!this.newItem.recipe_id) return;
         const payload = {
             date: this.selectedDate,
             recipe_id: parseInt(this.newItem.recipe_id),
-            servings: parseInt(this.newItem.servings)
+            servings: parseInt(this.newItem.servings),
+            meal_type: this.newItem.meal_type
         };
-        if(await $store.planner.add(payload)) {
+        
+        // Pass withLeftovers flag to store
+        if(await $store.planner.add(payload, this.newItem.with_leftovers)) {
             this.showModal = false;
             $store.planner.fetchWeek(this.weekStart, this.weekEnd);
         }
@@ -83,6 +95,14 @@
          if(await $store.planner.remove(id)) {
             $store.planner.fetchWeek(this.weekStart, this.weekEnd);
          }
+    },
+    getMealTypeLabel(type) {
+        const map = {
+            'breakfast': $store.i18n.t('breakfast'),
+            'lunch': $store.i18n.t('lunch'),
+            'dinner': $store.i18n.t('dinner')
+        };
+        return map[type] || type;
     }
 }" x-effect="updateWeek()">
 
@@ -134,43 +154,70 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+        <!-- Weekly Grid -->
+        <div class="grid grid-cols-1 xl:grid-cols-7 gap-6">
             <template x-for="day in days" :key="day.date">
                 <div
-                    class="bg-white rounded-2xl shadow-sm border border-slate-100 min-h-[240px] flex flex-col hover:shadow-md transition duration-300 overflow-hidden">
-                    <div class="p-3 bg-slate-50 border-b border-slate-100 text-center">
-                        <div class="font-bold text-slate-700 capitalize text-lg" x-text="day.name"></div>
+                    class="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition duration-300 overflow-hidden">
+                    <div class="p-3 bg-slate-100/50 border-b border-slate-100 text-center">
+                        <div class="font-bold text-slate-800 capitalize text-lg" x-text="day.name"></div>
                         <div class="text-xs font-bold text-slate-400 uppercase tracking-widest" x-text="day.display">
                         </div>
                     </div>
 
-                    <div class="flex-1 p-2 space-y-2 overflow-y-auto max-h-[400px]">
-                        <template x-for="item in getItemsForDate(day.date)" :key="item.id">
-                            <div
-                                class="bg-white p-3 rounded-xl text-sm relative group border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition flex flex-col gap-1">
-                                <button @click="deleteItem(item.id)"
-                                    class="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 shadow text-xs hover:bg-rose-600 transition scale-90 hover:scale-100 z-10">&times;</button>
-
-                                <div class="font-bold text-slate-800 leading-tight pr-2 flex items-start gap-1">
-                                    <span class="flex-grow"
-                                        x-text="item.recipe ? item.recipe.title : 'Details hidden'"></span>
-                                    <span x-show="item.recipe && item.recipe.is_vegetarian" class="text-sm shrink-0"
-                                        title="Vegetarian">🌿</span>
+                    <div class="flex-1 flex flex-col divide-y divide-slate-100">
+                        <!-- Breakfast -->
+                        <div class="p-2 flex-1 min-h-[80px]">
+                            <div class="text-[10px] font-bold uppercase text-slate-400 mb-1"
+                                x-text="$store.i18n.t('breakfast')">Breakfast</div>
+                            <template x-for="item in getItemsForDateAndType(day.date, 'breakfast')" :key="item.id">
+                                <div class="relative group bg-amber-50 rounded-lg p-2 mb-1 border border-amber-100">
+                                    <button @click="deleteItem(item.id)"
+                                        class="absolute -top-1 -right-1 bg-white text-rose-500 rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 shadow text-[10px] hover:bg-rose-50 transition border border-rose-100">&times;</button>
+                                    <div class="text-xs font-bold text-slate-700 leading-tight"
+                                        x-text="item.recipe ? item.recipe.title : '...'"></div>
                                 </div>
-                                <div
-                                    class="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-1 bg-slate-50 w-max px-2 py-0.5 rounded-md">
-                                    🍽️ <span x-text="item.servings"></span>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
+                            </template>
+                            <button @click="openAddModal(day.date, 'breakfast')"
+                                class="w-full text-center text-slate-300 hover:text-emerald-600 text-xl font-bold leading-none py-1 rounded hover:bg-slate-50 transition">+</button>
+                        </div>
 
-                    <div class="p-2 mt-auto">
-                        <button @click="openAddModal(day.date)"
-                            class="w-full text-xs font-bold text-slate-400 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 py-3 rounded-xl border border-dashed border-slate-200 hover:border-emerald-200 transition uppercase tracking-wider flex items-center justify-center gap-1 group">
-                            <span class="text-lg leading-none group-hover:scale-125 transition">+</span> <span
-                                x-text="$store.i18n.t('add_meal')">Add</span>
-                        </button>
+                        <!-- Lunch -->
+                        <div class="p-2 flex-1 min-h-[100px] bg-slate-50/30">
+                            <div class="text-[10px] font-bold uppercase text-slate-400 mb-1"
+                                x-text="$store.i18n.t('lunch')">Lunch</div>
+                            <template x-for="item in getItemsForDateAndType(day.date, 'lunch')" :key="item.id">
+                                <div class="relative group bg-sky-50 rounded-lg p-2 mb-1 border border-sky-100">
+                                    <button @click="deleteItem(item.id)"
+                                        class="absolute -top-1 -right-1 bg-white text-rose-500 rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 shadow text-[10px] hover:bg-rose-50 transition border border-rose-100">&times;</button>
+                                    <div class="text-xs font-bold text-slate-700 leading-tight"
+                                        x-text="item.recipe ? item.recipe.title : '...'"></div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5">🍽️ <span
+                                            x-text="item.servings"></span></div>
+                                </div>
+                            </template>
+                            <button @click="openAddModal(day.date, 'lunch')"
+                                class="w-full text-center text-slate-300 hover:text-emerald-600 text-xl font-bold leading-none py-1 rounded hover:bg-slate-50 transition">+</button>
+                        </div>
+
+                        <!-- Dinner -->
+                        <div class="p-2 flex-1 min-h-[100px]">
+                            <div class="text-[10px] font-bold uppercase text-slate-400 mb-1"
+                                x-text="$store.i18n.t('dinner')">Dinner</div>
+                            <template x-for="item in getItemsForDateAndType(day.date, 'dinner')" :key="item.id">
+                                <div class="relative group bg-emerald-50 rounded-lg p-2 mb-1 border border-emerald-100">
+                                    <button @click="deleteItem(item.id)"
+                                        class="absolute -top-1 -right-1 bg-white text-rose-500 rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 shadow text-[10px] hover:bg-rose-50 transition border border-rose-100">&times;</button>
+                                    <div class="text-xs font-bold text-slate-700 leading-tight"
+                                        x-text="item.recipe ? item.recipe.title : '...'"></div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5">🍽️ <span
+                                            x-text="item.servings"></span></div>
+                                </div>
+                            </template>
+                            <button @click="openAddModal(day.date, 'dinner')"
+                                class="w-full text-center text-slate-300 hover:text-emerald-600 text-xl font-bold leading-none py-1 rounded hover:bg-slate-50 transition">+</button>
+                        </div>
+
                     </div>
                 </div>
             </template>
@@ -184,10 +231,16 @@
 
         <div x-show="showModal" x-transition.scale
             class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 border border-slate-100">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800">
+            <h2 class="text-2xl font-bold mb-1 text-slate-800">
                 <span x-text="$store.i18n.t('add_meal')">Add Meal</span>
-                <span class="block text-sm font-medium text-slate-400 mt-1" x-text="selectedDate"></span>
             </h2>
+            <div class="flex items-center gap-2 mb-6 text-sm">
+                <span class="font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded"
+                    x-text="selectedDate"></span>
+                <span class="text-slate-300">•</span>
+                <span class="font-bold text-slate-500 uppercase tracking-wide"
+                    x-text="getMealTypeLabel(newItem.meal_type)"></span>
+            </div>
 
             <div class="mb-5">
                 <label class="block text-sm font-bold mb-2 text-slate-700"
@@ -203,11 +256,22 @@
                 </select>
             </div>
 
-            <div class="mb-8">
+            <div class="mb-5">
                 <label class="block text-sm font-bold mb-2 text-slate-700"
                     x-text="$store.i18n.t('servings')">Servings</label>
                 <input type="number" x-model="newItem.servings"
                     class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-slate-800">
+            </div>
+
+            <!-- Leftovers Option (Only if Dinner) -->
+            <div x-show="newItem.meal_type === 'dinner'" class="mb-8">
+                <label
+                    class="flex items-center gap-3 cursor-pointer p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition">
+                    <input type="checkbox" x-model="newItem.with_leftovers"
+                        class="w-5 h-5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
+                    <span class="text-sm font-semibold text-slate-600" x-text="$store.i18n.t('leftovers_label')">Cook
+                        for tomorrow lunch?</span>
+                </label>
             </div>
 
             <div class="flex justify-end gap-3">

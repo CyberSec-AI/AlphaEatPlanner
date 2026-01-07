@@ -13,6 +13,7 @@ class Recipe(Base):
     is_favorite = Column(Boolean, default=False)
     rating = Column(Integer, default=0)
     is_vegetarian = Column(Boolean, default=False)
+    image_url = Column(String(500), nullable=True)
     _tags = Column("tags", Text, nullable=True) # Storing as JSON string for simplicity in MySQL 8
 
     ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
@@ -48,5 +49,16 @@ class MealPlanItem(Base):
     date = Column(Date, index=True)
     recipe_id = Column(Integer, ForeignKey("recipes.id"))
     servings = Column(Integer)
+    meal_type = Column(String(20), default="dinner") # 'breakfast', 'lunch', 'dinner'
 
     recipe = relationship("Recipe", back_populates="meal_plan_items")
+
+
+class GroceryManualItem(Base):
+    __tablename__ = "grocery_manual_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), index=True)
+    quantity = Column(Numeric(10, 2), default=1)
+    unit = Column(String(50), nullable=True)
+    is_checked = Column(Boolean, default=False)
