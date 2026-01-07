@@ -5,11 +5,15 @@ from typing import List, Dict, Tuple
 from decimal import Decimal
 
 def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List[schemas.GroceryItem]:
+    print(f"DEBUG: Generating list from {start_date} to {end_date}")
+    
     # Fetch meal plan items
     meal_items = db.query(models.MealPlanItem).filter(
         models.MealPlanItem.date >= start_date,
         models.MealPlanItem.date <= end_date
     ).all()
+    
+    print(f"DEBUG: Found {len(meal_items)} meal items in range.")
     
     # Aggregate
     # Key: (normalized_name, normalized_unit)
@@ -18,10 +22,16 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
     for item in meal_items:
         recipe = item.recipe
         if not recipe:
+            print(f"DEBUG: Item {item.id} has no recipe!")
             continue
             
+        print(f"DEBUG: Processing Recipe '{recipe.title}' (Default: {recipe.default_servings}, Plan: {item.servings})")
         ratio = Decimal(item.servings) / Decimal(recipe.default_servings) if recipe.default_servings else 1
+        print(f"DEBUG: Ratio = {ratio}")
         
+        if not recipe.ingredients:
+            print(f"DEBUG: Recipe '{recipe.title}' has 0 ingredients.")
+
         for ing in recipe.ingredients:
             # Normalize
             norm_name = ing.name.strip().lower()
@@ -47,14 +57,5 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
             original_ingredients=["Generated"]
         ))
     
-    # Add manual items
-    # Note: Logic moved to route handler for simplicity to avoid circular imports if we used crud here,
-    # OR we can inject db session here. Since route calls this, route can also call crud.get_manual...
-    # BUT user asked for "generated form planning AND manual".
-    # The route implementation I did in previous step combines them.
-    # So this function can stay focused on PLANNED items only.
-    # WAIT, if I want to merge them nicely (same ingredient name), I should do it here.
-    # But for now, separate lists appended in route is safer/easier.
-    # I will keep this file focused on RECIPE ingredients aggregation.
-    
+    print(f"DEBUG: Final generated list has {len(result)} items.")
     return sorted(result, key=lambda x: x.name)

@@ -33,12 +33,23 @@ document.addEventListener('alpine:init', () => {
             if (!this.token && !window.location.href.includes('login.html')) {
                 window.location.href = 'login.html';
             }
-            // Add Authorization header to global fetch if possible? 
-            // Or we just rely on passing headers manually. 
-            // Better: Override fetch? A bit risky. 
-            // Simplest: Just redirect if no token. We are not securing API calls deeply in JS, 
-            // backend will reject if we implemented security deps on routes (which we didn't fully enforce yet on other routes but let's assume session cookie or similar if we used that, but we use Token).
             // Actually, we need to send token in headers for ALL requests.
+        },
+        async createUser(username, password) {
+            try {
+                // Backend expects query params currently
+                const res = await fetch(`${API_URL}/users?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
+                    method: 'POST'
+                });
+                if (res.ok) return true;
+                else {
+                    const err = await res.json();
+                    alert("Erreur: " + (err.detail || "Impossible de créer l'utilisateur"));
+                }
+            } catch (e) {
+                alert("Erreur technique: " + e.message);
+            }
+            return false;
         }
     });
 

@@ -68,3 +68,9 @@ def delete_manual_item(item_id: int, db: Session = Depends(get_db)):
 def get_grocery_library(db: Session = Depends(get_db)):
     # Return items sorted by usage count (most frequent first)
     return db.query(models.GroceryLibraryItem).order_by(models.GroceryLibraryItem.usage_count.desc()).all()
+
+@router.delete("/library/{item_id}")
+def delete_library_item(item_id: int, db: Session = Depends(get_db)):
+    db.query(models.GroceryLibraryItem).filter(models.GroceryLibraryItem.id == item_id).delete()
+    db.commit()
+    return {"status": "ok"}
