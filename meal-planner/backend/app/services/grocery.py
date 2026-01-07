@@ -41,7 +41,7 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
             
             key = (norm_name, norm_unit)
             
-            quantity = (ing.quantity * ratio)
+            quantity = (Decimal(ing.quantity) * ratio)
             
             if key in agg:
                 agg[key] += quantity
