@@ -106,211 +106,238 @@ const TRANSLATIONS = {
         item_name: "Item Name",
         error_api: "Connection Error: Could not save/load data. Please check your internet or server."
     },
-    The `}` closes the object started at`const TRANSLATIONS = {`.
-    The comma suggests another variable declaration.
+    fr: {
+        grocery: "Liste de Courses",
+        welcome: "Bienvenue dans votre planificateur de repas",
+        welcome_sub: "Organisez vos repas, gérez vos recettes et générez des listes sans effort.",
+        browse_recipes: "Parcourir les recettes",
+        plan_week: "Planifier votre semaine",
+        add_recipe: "Nouvelle Recette",
+        servings: "Portions",
+        ingredients: "Ingrédients",
+        save: "Enregistrer",
+        cancel: "Annuler",
+        no_recipes: "Aucune recette trouvée.",
+        weekly_plan: "Plan Hebdomadaire",
+        prev: "Préc",
+        next: "Suiv",
+        add_meal: "Ajouter un repas",
+        generate_list: "Générer la liste",
+        from: "Du",
+        to: "Au",
+        print: "Imprimer",
+        loading: "Chargement...",
+        no_items: "Aucun article nécessaire.",
+        vegetarian: "Végétarien",
+        is_vegetarian_label: "Cette recette est-elle végétarienne ?",
+        delete_confirm: "Êtes-vous sûr de vouloir supprimer ceci ?",
+        breakfast: "Petit-déjeuner",
+        lunch: "Déjeuner",
+        dinner: "Dîner",
+        meal_type: "Type de repas",
+        leftovers_label: "Cuisiner assez pour des restes (Déjeuner demain)",
+        image_url: "URL de l'image (Optionnel)",
+        manual_items: "Articles Manuels",
+        add_item: "Ajouter un article",
+        item_name: "Nom de l'article",
+        error_api: "Erreur de connexion : Impossible d'enregistrer/charger les données. Veuillez vérifier votre internet ou le serveur."
+    }
+};
 
-    If I assume the user wants to fix the structure to support the `i18n` store:
-    I will provide the `fr` object and then redefine`TRANSLATIONS`(or rather, define the languages and then the final object).
+document.addEventListener('alpine:init', () => {
 
-    But wait, if `const TRANSLATIONS` is already declared, I can't declare it again.
+    Alpine.store('i18n', {
+        lang: 'fr',
+        t(key) { return TRANSLATIONS[this.lang][key] || key; },
+        toggle() { this.lang = this.lang === 'en' ? 'fr' : 'en'; }
+    });
 
-    Let's assume the user's `fr` block was intended to be part of the same `const` declaration.
-
-
-    document.addEventListener('alpine:init', () => {
-
-        Alpine.store('i18n', {
-            lang: 'fr',
-            t(key) { return TRANSLATIONS[this.lang][key] || key; },
-            toggle() { this.lang = this.lang === 'en' ? 'fr' : 'en'; }
-        });
-
-        Alpine.store('recipes', {
-            list: [],
-            loading: false,
-            async fetch() {
-                this.loading = true;
-                try {
-                    const res = await fetch(`${API_URL}/recipes/`);
-                    if (!res.ok) throw new Error('Failed');
-                    this.list = await res.json();
-                } catch (e) {
-                    console.error(e);
-                    alert(Alpine.store('i18n').t('error_api'));
-                    this.list = [];
-                } finally {
-                    this.loading = false;
+    Alpine.store('recipes', {
+        list: [],
+        loading: false,
+        async fetch() {
+            this.loading = true;
+            try {
+                const res = await fetch(`${API_URL}/recipes/`);
+                if (!res.ok) throw new Error('Failed');
+                this.list = await res.json();
+            } catch (e) {
+                console.error(e);
+                alert(Alpine.store('i18n').t('error_api'));
+                this.list = [];
+            } finally {
+                this.loading = false;
+            }
+        },
+        async create(recipe) {
+            try {
+                const res = await fetch(`${API_URL}/recipes/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(recipe)
+                });
+                if (res.ok) { this.fetch(); return true; }
+            } catch (e) {
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
+            }
+            return false;
+        },
+        async delete(id) {
+            if (!confirm(Alpine.store('i18n').t('delete_confirm'))) return;
+            try {
+                const res = await fetch(`${API_URL}/recipes/${id}`, { method: 'DELETE' });
+                if (res.ok) this.fetch();
+                else throw new Error("Delete failed");
+            } catch (e) {
+                alert(Alpine.store('i18n').t('error_api'));
+            }
+        },
+        async updateRating(id, rating) {
+            try {
+                const res = await fetch(`${API_URL}/recipes/${id}`);
+                if (res.ok) {
+                    const fullRecipe = await res.json();
+                    fullRecipe.rating = rating;
+                    fullRecipe.ingredients = fullRecipe.ingredients.map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit }));
+                    await fetch(`${API_URL}/recipes/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(fullRecipe)
+                    });
                 }
-            },
-            async create(recipe) {
-                try {
-                    const res = await fetch(`${API_URL}/recipes/`, {
+            } catch (e) { console.error("Rating update failed", e); }
+        },
+        async uploadImage(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const res = await fetch(`${API_URL}/upload/`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    return data.url; // Returns /static/images/uuid.jpg
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Upload Failed");
+            }
+            return null;
+        }
+    });
+
+    Alpine.store('planner', {
+        weekItems: [],
+        currentStart: new Date(),
+        async fetchWeek(startStr, endStr) {
+            try {
+                const res = await fetch(`${API_URL}/meal-plan/?start=${startStr}&end=${endStr}`);
+                if (!res.ok) throw new Error('Failed');
+                this.weekItems = await res.json();
+            } catch (e) {
+                console.error(e);
+                alert(Alpine.store('i18n').t('error_api'));
+                this.weekItems = [];
+            }
+        },
+        async add(item, withLeftovers = false) {
+            try {
+                // Main Item
+                const res = await fetch(`${API_URL}/meal-plan/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
+
+                if (!res.ok) throw new Error('Failed main item');
+
+                // Leftovers Logic (Next Day Lunch)
+                if (withLeftovers) {
+                    const nextDay = new Date(item.date);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    const leftoverItem = {
+                        ...item,
+                        date: nextDay.toISOString().split('T')[0],
+                        meal_type: 'lunch'
+                    };
+                    await fetch(`${API_URL}/meal-plan/`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(recipe)
+                        body: JSON.stringify(leftoverItem)
                     });
-                    if (res.ok) { this.fetch(); return true; }
-                } catch (e) {
-                    alert(Alpine.store('i18n').t('error_api'));
-                    return false;
+                }
+
+                return true;
+            } catch (e) {
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
+            }
+        },
+        async remove(id) {
+            if (!confirm(Alpine.store('i18n').t('delete_confirm'))) return false;
+            try {
+                const res = await fetch(`${API_URL}/meal-plan/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Failed');
+                return true;
+            } catch (e) {
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
+            }
+        }
+    });
+
+    Alpine.store('grocery', {
+        library: [], // Smart History
+        suggestions: [],
+
+        async init() {
+            // Pre-fetch library on load
+            this.fetchLibrary();
+        },
+
+        async fetchLibrary() {
+            try {
+                const res = await fetch(`${API_URL}/grocery-list/library`);
+                if (res.ok) {
+                    this.library = await res.json();
+                }
+            } catch (e) { }
+        },
+
+        getSuggestions(query) {
+            if (!query || query.length < 2) return [];
+            const q = query.toLowerCase();
+            return this.library.filter(item => item.name.toLowerCase().includes(q)).slice(0, 5);
+        },
+
+        async addManual(item) {
+            try {
+                const res = await fetch(`${API_URL}/grocery-list/manual`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
+                if (res.ok) {
+                    // Refresh library to include this new item (top of list)
+                    this.fetchLibrary();
+                    return true;
                 }
                 return false;
-            },
-            async delete(id) {
-                if (!confirm(Alpine.store('i18n').t('delete_confirm'))) return;
-                try {
-                    const res = await fetch(`${API_URL}/recipes/${id}`, { method: 'DELETE' });
-                    if (res.ok) this.fetch();
-                    else throw new Error("Delete failed");
-                } catch (e) {
-                    alert(Alpine.store('i18n').t('error_api'));
-                }
-            },
-            async updateRating(id, rating) {
-                try {
-                    const res = await fetch(`${API_URL}/recipes/${id}`);
-                    if (res.ok) {
-                        const fullRecipe = await res.json();
-                        fullRecipe.rating = rating;
-                        fullRecipe.ingredients = fullRecipe.ingredients.map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit }));
-                        await fetch(`${API_URL}/recipes/${id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(fullRecipe)
-                        });
-                    }
-                } catch (e) { console.error("Rating update failed", e); }
-            },
-            async uploadImage(file) {
-                const formData = new FormData();
-                formData.append('file', file);
-                try {
-                    const res = await fetch(`${API_URL}/upload/`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        return data.url; // Returns /static/images/uuid.jpg
-                    }
-                } catch (e) {
-                    console.error(e);
-                    alert("Upload Failed");
-                }
-                return null;
+            } catch (e) {
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
             }
-        });
-
-        Alpine.store('planner', {
-            weekItems: [],
-            currentStart: new Date(),
-            async fetchWeek(startStr, endStr) {
-                try {
-                    const res = await fetch(`${API_URL}/meal-plan/?start=${startStr}&end=${endStr}`);
-                    if (!res.ok) throw new Error('Failed');
-                    this.weekItems = await res.json();
-                } catch (e) {
-                    console.error(e);
-                    alert(Alpine.store('i18n').t('error_api'));
-                    this.weekItems = [];
-                }
-            },
-            async add(item, withLeftovers = false) {
-                try {
-                    // Main Item
-                    const res = await fetch(`${API_URL}/meal-plan/`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(item)
-                    });
-
-                    if (!res.ok) throw new Error('Failed main item');
-
-                    // Leftovers Logic (Next Day Lunch)
-                    if (withLeftovers) {
-                        const nextDay = new Date(item.date);
-                        nextDay.setDate(nextDay.getDate() + 1);
-                        const leftoverItem = {
-                            ...item,
-                            date: nextDay.toISOString().split('T')[0],
-                            meal_type: 'lunch'
-                        };
-                        await fetch(`${API_URL}/meal-plan/`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(leftoverItem)
-                        });
-                    }
-
-                    return true;
-                } catch (e) {
-                    alert(Alpine.store('i18n').t('error_api'));
-                    return false;
-                }
-            },
-            async remove(id) {
-                if (!confirm(Alpine.store('i18n').t('delete_confirm'))) return false;
-                try {
-                    const res = await fetch(`${API_URL}/meal-plan/${id}`, { method: 'DELETE' });
-                    if (!res.ok) throw new Error('Failed');
-                    return true;
-                } catch (e) {
-                    alert(Alpine.store('i18n').t('error_api'));
-                    return false;
-                }
-            }
-        });
-
-        Alpine.store('grocery', {
-            library: [], // Smart History
-            suggestions: [],
-
-            async init() {
-                // Pre-fetch library on load
-                this.fetchLibrary();
-            },
-
-            async fetchLibrary() {
-                try {
-                    const res = await fetch(`${API_URL}/grocery-list/library`);
-                    if (res.ok) {
-                        this.library = await res.json();
-                    }
-                } catch (e) { }
-            },
-
-            getSuggestions(query) {
-                if (!query || query.length < 2) return [];
-                const q = query.toLowerCase();
-                return this.library.filter(item => item.name.toLowerCase().includes(q)).slice(0, 5);
-            },
-
-            async addManual(item) {
-                try {
-                    const res = await fetch(`${API_URL}/grocery-list/manual`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(item)
-                    });
-                    if (res.ok) {
-                        // Refresh library to include this new item (top of list)
-                        this.fetchLibrary();
-                        return true;
-                    }
-                    return false;
-                } catch (e) {
-                    alert(Alpine.store('i18n').t('error_api'));
-                    return false;
-                }
-            },
-            async removeManual(id) {
-                try {
-                    const res = await fetch(`${API_URL}/grocery-list/manual/${id}`, { method: 'DELETE' });
-                    return res.ok;
-                } catch (e) { return false; }
-            }
-        });
+        },
+        async removeManual(id) {
+            try {
+                const res = await fetch(`${API_URL}/grocery-list/manual/${id}`, { method: 'DELETE' });
+                return res.ok;
+            } catch (e) { return false; }
+        }
     });
+});
 
 function getWeekRange(date) {
     const start = new Date(date);
