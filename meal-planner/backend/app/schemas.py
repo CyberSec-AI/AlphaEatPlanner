@@ -46,7 +46,7 @@ class Recipe(RecipeBase):
 # Meal Plan Schemas
 class MealPlanItemBase(BaseModel):
     date: date
-    recipe_id: int
+    recipe_id: Optional[int] = None
     servings: int
     meal_type: str = "dinner"
 
