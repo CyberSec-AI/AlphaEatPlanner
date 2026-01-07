@@ -9,7 +9,10 @@ router = APIRouter(prefix="/meal-plan", tags=["meal-plan"])
 
 @router.get("/", response_model=List[schemas.MealPlanItem])
 def read_meal_plan(start: date, end: date, db: Session = Depends(get_db)):
-    return crud.get_meal_plan(db, start_date=start, end_date=end)
+    print(f"DEBUG: Fetching meal plan from {start} to {end}")
+    items = crud.get_meal_plan(db, start_date=start, end_date=end)
+    print(f"DEBUG: Found {len(items)} items")
+    return items
 
 @router.post("/", response_model=schemas.MealPlanItem)
 def create_meal_plan_item(item: schemas.MealPlanItemCreate, db: Session = Depends(get_db)):
