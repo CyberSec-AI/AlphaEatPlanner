@@ -1,0 +1,61 @@
+services:
+  backend:
+    build: ../backend
+    container_name: meal_planner_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+    environment:
+      - DATABASE_URL=mysql+pymysql://${DB_USER}:${DB_PASSWORD}@db:3306/${DB_NAME}
+    networks:
+      - mealnet
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh /app/start.sh
+
+  frontend:
+    build: ../frontend
+    container_name: meal_planner_frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ../frontend:/usr/share/nginx/html
+    networks:
+      - mealnet
+
+  db:
+    image: mysql:8.0
+    container_name: meal_planner_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - mealnet
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - mealnet
+
+volumes:
+  db_data:
+
+
+networks:
+  mealnet:

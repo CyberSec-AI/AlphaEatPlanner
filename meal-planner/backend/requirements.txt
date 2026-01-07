@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlalchemy
+pymysql
+alembic
+pydantic
+email-validator
+python-multipart
+cryptography

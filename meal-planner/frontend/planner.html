@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planner - Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-slate-800 min-h-screen flex flex-col" x-data="{
+    currentDate: new Date(),
+    weekStart: '',
+    weekEnd: '',
+    days: [],
+    showModal: false,
+    selectedDate: '',
+    newItem: { recipe_id: '', servings: 2 },
+    
+    init() {
+        this.updateWeek();
+        $store.recipes.fetch();
+    },
+    updateWeek() {
+        const range = getWeekRange(this.currentDate);
+        this.weekStart = range.start;
+        this.weekEnd = range.end;
+        
+        this.days = [];
+        let d = new Date(range.startObj);
+        for(let i=0; i<7; i++) {
+            this.days.push({
+                date: d.toISOString().split('T')[0],
+                name: d.toLocaleDateString($store.i18n.lang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long' }),
+                display: d.toLocaleDateString($store.i18n.lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
+            });
+            d.setDate(d.getDate() + 1);
+        }
+        
+        $store.planner.fetchWeek(this.weekStart, this.weekEnd);
+    },
+    prevWeek() {
+        this.currentDate.setDate(this.currentDate.getDate() - 7);
+        this.updateWeek();
+    },
+    nextWeek() {
+        this.currentDate.setDate(this.currentDate.getDate() + 7);
+        this.updateWeek();
+    },
+    openAddModal(dateStr) {
+        this.selectedDate = dateStr;
+        this.showModal = true;
+    },
+    getItemsForDate(dateStr) {
+        return $store.planner.weekItems.filter(item => item.date === dateStr);
+    },
+    async submitItem() {
+        if(!this.newItem.recipe_id) return;
+        const payload = {
+            date: this.selectedDate,
+            recipe_id: parseInt(this.newItem.recipe_id),
+            servings: parseInt(this.newItem.servings)
+        };
+        if(await $store.planner.add(payload)) {
+            this.showModal = false;
+            $store.planner.fetchWeek(this.weekStart, this.weekEnd);
+        }
+    },
+    async deleteItem(id) {
+         if(await $store.planner.remove(id)) {
+            $store.planner.fetchWeek(this.weekStart, this.weekEnd);
+         }
+    }
+}" x-effect="updateWeek()">
+
+    <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="container mx-auto flex justify-between items-center p-4">
+            <a href="index.html"
+                class="text-2xl font-extrabold tracking-tight flex items-center gap-2 hover:opacity-80 transition bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+                <span>🥗</span> <span x-text="$store.i18n.t('title')">Meal Planner</span>
+            </a>
+            <div class="flex items-center gap-2 md:gap-6 text-sm font-semibold text-slate-600">
+                <a href="index.html" class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    x-text="$store.i18n.t('dashboard')">Dashboard</a>
+                <a href="recipes.html"
+                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    x-text="$store.i18n.t('recipes')">Recipes</a>
+                <a href="planner.html" class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg"
+                    x-text="$store.i18n.t('planner')">Planner</a>
+                <a href="grocery.html"
+                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    x-text="$store.i18n.t('grocery')">Grocery</a>
+                <div class="h-4 w-px bg-slate-300 mx-1"></div>
+                <!-- Lang Toggle -->
+                <button @click="$store.i18n.toggle()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-xs font-bold uppercase text-slate-700"
+                    x-text="$store.i18n.lang">
+                    FR
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8 pb-12">
+        <div
+            class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <h1 class="text-3xl font-extrabold text-slate-800 flex items-center gap-3">
+                📅 <span x-text="$store.i18n.t('weekly_plan')">Weekly Plan</span>
+            </h1>
+            <div class="flex items-center gap-4 bg-slate-50 p-2 rounded-xl">
+                <button @click="prevWeek()"
+                    class="bg-white hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-bold shadow-sm border border-slate-200 transition text-sm"
+                    x-text="$store.i18n.t('prev')">Prev</button>
+                <div class="font-bold text-slate-700 whitespace-nowrap text-sm sm:text-base">
+                    <span x-text="weekStart"></span> <span class="text-slate-300 mx-2">•</span> <span
+                        x-text="weekEnd"></span>
+                </div>
+                <button @click="nextWeek()"
+                    class="bg-white hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-bold shadow-sm border border-slate-200 transition text-sm"
+                    x-text="$store.i18n.t('next')">Next</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+            <template x-for="day in days" :key="day.date">
+                <div
+                    class="bg-white rounded-2xl shadow-sm border border-slate-100 min-h-[240px] flex flex-col hover:shadow-md transition duration-300 overflow-hidden">
+                    <div class="p-3 bg-slate-50 border-b border-slate-100 text-center">
+                        <div class="font-bold text-slate-700 capitalize text-lg" x-text="day.name"></div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest" x-text="day.display">
+                        </div>
+                    </div>
+
+                    <div class="flex-1 p-2 space-y-2 overflow-y-auto max-h-[400px]">
+                        <template x-for="item in getItemsForDate(day.date)" :key="item.id">
+                            <div
+                                class="bg-white p-3 rounded-xl text-sm relative group border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition flex flex-col gap-1">
+                                <button @click="deleteItem(item.id)"
+                                    class="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 shadow text-xs hover:bg-rose-600 transition scale-90 hover:scale-100 z-10">&times;</button>
+
+                                <div class="font-bold text-slate-800 leading-tight pr-2 flex items-start gap-1">
+                                    <span class="flex-grow"
+                                        x-text="item.recipe ? item.recipe.title : 'Details hidden'"></span>
+                                    <span x-show="item.recipe && item.recipe.is_vegetarian" class="text-sm shrink-0"
+                                        title="Vegetarian">🌿</span>
+                                </div>
+                                <div
+                                    class="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-1 bg-slate-50 w-max px-2 py-0.5 rounded-md">
+                                    🍽️ <span x-text="item.servings"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="p-2 mt-auto">
+                        <button @click="openAddModal(day.date)"
+                            class="w-full text-xs font-bold text-slate-400 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 py-3 rounded-xl border border-dashed border-slate-200 hover:border-emerald-200 transition uppercase tracking-wider flex items-center justify-center gap-1 group">
+                            <span class="text-lg leading-none group-hover:scale-125 transition">+</span> <span
+                                x-text="$store.i18n.t('add_meal')">Add</span>
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div x-show="showModal" x-transition.opacity class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            @click="showModal = false"></div>
+
+        <div x-show="showModal" x-transition.scale
+            class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 border border-slate-100">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">
+                <span x-text="$store.i18n.t('add_meal')">Add Meal</span>
+                <span class="block text-sm font-medium text-slate-400 mt-1" x-text="selectedDate"></span>
+            </h2>
+
+            <div class="mb-5">
+                <label class="block text-sm font-bold mb-2 text-slate-700"
+                    x-text="$store.i18n.t('recipes')">Recipe</label>
+                <select x-model="newItem.recipe_id"
+                    class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 font-medium">
+                    <option value="" x-text="'-- Select --'"></option>
+                    <template x-for="r in $store.recipes.list" :key="r.id">
+                        <option :value="r.id">
+                            <span x-text="r.title"></span> <span x-show="r.is_vegetarian"> (🌿)</span>
+                        </option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="mb-8">
+                <label class="block text-sm font-bold mb-2 text-slate-700"
+                    x-text="$store.i18n.t('servings')">Servings</label>
+                <input type="number" x-model="newItem.servings"
+                    class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-slate-800">
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button @click="showModal = false"
+                    class="text-slate-500 hover:text-slate-800 px-4 py-2 font-bold transition"
+                    x-text="$store.i18n.t('cancel')">Cancel</button>
+                <button @click="submitItem()"
+                    class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-200 font-bold transition transform active:scale-95"
+                    x-text="$store.i18n.t('save')">Add Meal</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

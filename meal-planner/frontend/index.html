@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gradient-to-tr from-slate-50 via-gray-50 to-emerald-50/30 text-slate-800 min-h-screen flex flex-col overflow-hidden">
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-40 bg-white/70 backdrop-blur-md border-b border-white/50">
+        <div class="container mx-auto flex justify-between items-center p-4">
+            <a href="index.html"
+                class="text-2xl font-extrabold tracking-tight flex items-center gap-2 hover:opacity-80 transition bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+                <span>🥗</span> <span x-text="$store.i18n.t('title')">Meal Planner</span>
+            </a>
+            <div class="flex items-center gap-2 md:gap-6 text-sm font-semibold text-slate-600">
+                <a href="index.html" class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg"
+                    x-text="$store.i18n.t('dashboard')">Dashboard</a>
+                <a href="recipes.html"
+                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    x-text="$store.i18n.t('recipes')">Recipes</a>
+                <a href="planner.html"
+                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    x-text="$store.i18n.t('planner')">Planner</a>
+                <a href="grocery.html"
+                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    x-text="$store.i18n.t('grocery')">Grocery</a>
+
+                <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                <!-- Lang Toggle -->
+                <button @click="$store.i18n.toggle()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-xs font-bold uppercase text-slate-700"
+                    x-text="$store.i18n.lang">
+                    FR
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 flex-grow flex flex-col items-center justify-center relative">
+
+        <!-- Decorative blobs -->
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-200/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse">
+        </div>
+        <div
+            class="absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-teal-200/20 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob">
+        </div>
+
+        <div class="relative z-10 max-w-4xl w-full flex flex-col items-center text-center">
+
+            <div
+                class="mb-6 inline-flex items-center justify-center p-3 bg-white rounded-2xl shadow-sm border border-slate-100 rotate-3 transform hover:rotate-6 transition duration-500">
+                <span class="text-4xl">🥑</span>
+            </div>
+
+            <h1 class="text-6xl md:text-7xl font-black text-slate-800 tracking-tighter mb-8 leading-tight">
+                <span class="block text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-teal-600"
+                    x-text="$store.i18n.t('welcome')">Welcome</span>
+            </h1>
+
+            <p class="text-slate-500 text-xl md:text-2xl mb-12 font-light max-w-2xl leading-relaxed"
+                x-text="$store.i18n.t('welcome_sub')">
+                Organize your meals, manage your recipes, and generate your grocery lists effortlessly.
+            </p>
+
+            <div class="flex flex-col sm:flex-row justify-center gap-6 w-full max-w-md">
+                <a href="recipes.html"
+                    class="flex-1 group relative px-8 py-5 bg-slate-800 text-white rounded-2xl font-bold shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                    <div
+                        class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer">
+                    </div>
+                    <span class="flex items-center justify-center gap-3">
+                        <span class="text-xl">🍳</span> <span x-text="$store.i18n.t('browse_recipes')">Browse
+                            Recipes</span>
+                    </span>
+                </a>
+
+                <a href="planner.html"
+                    class="flex-1 group relative px-8 py-5 bg-white text-emerald-600 border border-emerald-100 rounded-2xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:bg-emerald-50">
+                    <span class="flex items-center justify-center gap-3">
+                        <span class="text-xl">📅</span> <span x-text="$store.i18n.t('plan_week')">Plan Your Week</span>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .group-hover\:animate-shimmer:hover {
+            animation: shimmer 1s infinite;
+        }
+
+        @keyframes blob {
+            0% {
+                transform: translate(0px, 0px) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+
+            100% {
+                transform: translate(0px, 0px) scale(1);
+            }
+        }
+
+        .animate-blob {
+            animation: blob 10s infinite;
+        }
+    </style>
+
+</body>
+
+</html>
