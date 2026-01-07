@@ -194,34 +194,59 @@
                         class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition font-medium text-slate-800 placeholder:text-slate-400">
                 </div>
 
+                <!-- Image Field (URL or Upload) -->
                 <div>
-                    <label class="block text-sm font-bold mb-2 text-slate-700" x-text="$store.i18n.t('image_url')">Image
-                        URL</label>
-                    <input type="text" x-model="newRecipe.image_url" placeholder="https://example.com/image.jpg"
-                        class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition font-medium text-slate-800 placeholder:text-slate-400">
+                    <label class="block text-sm font-bold mb-2 text-slate-700"
+                        x-text="$store.i18n.t('image_url')">Image</label>
+                    <div class="flex flex-col gap-3">
+                        <!-- URL Input -->
+                        <div class="relative">
+                            <span class="absolute left-3 top-3.5 text-slate-400 text-sm">🔗</span>
+                            <input type="text" x-model="newRecipe.image_url" placeholder="https://..."
+                                class="w-full pl-9 border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none transition font-medium text-slate-800">
+                        </div>
+
+                        <div class="text-center text-xs text-slate-400 font-bold uppercase tracking-widest">- OR -</div>
+
+                        <!-- File Input -->
+                        <label
+                            class="cursor-pointer group relative flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-300 rounded-xl p-4 hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                            <input type="file" class="hidden" accept="image/*" @change="async (e) => { 
+                                    const file = e.target.files[0]; 
+                                    if(file) {
+                                        const url = await $store.recipes.uploadImage(file);
+                                        if(url) newRecipe.image_url = url;
+                                    }
+                                }">
+                            <span class="text-2xl">📸</span>
+                            <span class="font-bold text-slate-500 group-hover:text-emerald-600 transition">Upload from
+                                Device</span>
+                        </label>
+
+                        <!-- Preview -->
+                        <template x-if="newRecipe.image_url">
+                            <div
+                                class="relative mt-2 h-32 rounded-xl overflow-hidden shadow-sm border border-slate-200">
+                                <img :src="newRecipe.image_url" class="w-full h-full object-cover">
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
-                <div class="flex items-center gap-3 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50">
-                    <div
-                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="toggle" x-model="newRecipe.is_vegetarian"
-                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer duration-200 ease-in-out border-emerald-200 transition-transform transform translate-x-0 checked:translate-x-6 checked:border-emerald-500" />
-                        <label for="toggle"
-                            class="toggle-label block overflow-hidden h-6 rounded-full bg-emerald-200 cursor-pointer"></label>
+                <!-- Vegetarian Toggle (Refined) -->
+                <div class="flex items-center justify-between bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">🌿</span>
+                        <span class="font-bold text-emerald-900"
+                            x-text="$store.i18n.t('is_vegetarian_label')">Vegetarian?</span>
                     </div>
-                    <label for="toggle"
-                        class="text-sm font-bold text-emerald-900 cursor-pointer select-none flex items-center gap-2">
-                        <span>🌿</span> <span x-text="$store.i18n.t('is_vegetarian_label')">Is Vegetarian?</span>
-                    </label>
-                    <style>
-                        .toggle-checkbox:checked {
-                            right: 0;
-                        }
 
-                        .toggle-checkbox:checked+.toggle-label {
-                            background-color: #10b981;
-                        }
-                    </style>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" x-model="newRecipe.is_vegetarian" class="sr-only peer">
+                        <div
+                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600">
+                        </div>
+                    </label>
                 </div>
 
                 <div>

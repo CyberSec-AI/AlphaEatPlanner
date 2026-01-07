@@ -1,5 +1,6 @@
-from fastapi import FastAPI
-from .api import routes_recipes, routes_meal_plan, routes_grocery
+from fastapi.staticfiles import StaticFiles
+import os
+from .api import routes_recipes, routes_meal_plan, routes_grocery, routes_upload
 
 app = FastAPI(
     title="Meal Planner API",
@@ -7,11 +8,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Ensure static dir exists
+os.makedirs("/app/static/images", exist_ok=True)
+app.mount("/static", StaticFiles(directory="/app/static"), name="static")
+
 from fastapi.middleware.cors import CORSMiddleware
 
 origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "*", # Allow all origins (required for VPN/IP access)
 ]
 
 app.add_middleware(
@@ -25,6 +29,7 @@ app.add_middleware(
 app.include_router(routes_recipes.router)
 app.include_router(routes_meal_plan.router)
 app.include_router(routes_grocery.router)
+app.include_router(routes_upload.router)
 
 @app.get("/health")
 def health_check():

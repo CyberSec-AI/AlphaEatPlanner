@@ -2,10 +2,11 @@ services:
   backend:
     build: ../backend
     container_name: meal_planner_backend
-    ports:
-      - "8000:8000"
+    # ports:
+    #   - "8001:8000" # Plus nécessaire grâce au proxy Nginx
     volumes:
       - ../backend:/app
+      - images_data:/app/static/images
     environment:
       - DATABASE_URL=mysql+pymysql://${DB_USER}:${DB_PASSWORD}@db:3306/${DB_NAME}
     networks:
@@ -22,11 +23,12 @@ services:
       - "3000:80"
     volumes:
       - ../frontend:/usr/share/nginx/html
+      - ../frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - mealnet
 
   db:
-    image: mysql:8.0
+    image: mysql:8.4
     container_name: meal_planner_db
     restart: always
     environment:
@@ -34,8 +36,8 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "3306:3306"
+    # ports:
+    #   - "3306:3306"  # Sécurité : On ne l'expose pas, accès via Adminer ou App interne uniquement
     volumes:
       - db_data:/var/lib/mysql
     networks:
@@ -55,6 +57,7 @@ services:
 
 volumes:
   db_data:
+  images_data:
 
 
 networks:

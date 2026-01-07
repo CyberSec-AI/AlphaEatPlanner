@@ -1,4 +1,4 @@
-const API_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+const API_URL = ""; // Nginx Proxy handles routing to Backend
 
 const TRANSLATIONS = {
     en: {
@@ -138,7 +138,6 @@ document.addEventListener('alpine:init', () => {
                 if (res.ok) {
                     const fullRecipe = await res.json();
                     fullRecipe.rating = rating;
-                    // Fix ingredients structure for update if needed
                     fullRecipe.ingredients = fullRecipe.ingredients.map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit }));
                     await fetch(`${API_URL}/recipes/${id}`, {
                         method: 'PUT',
@@ -147,6 +146,24 @@ document.addEventListener('alpine:init', () => {
                     });
                 }
             } catch (e) { console.error("Rating update failed", e); }
+        },
+        async uploadImage(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const res = await fetch(`${API_URL}/upload/`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    return data.url; // Returns /static/images/uuid.jpg
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Upload Failed");
+            }
+            return null;
         }
     });
 
