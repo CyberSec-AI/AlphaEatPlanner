@@ -44,6 +44,8 @@ class User(Base):
     profile_picture_url = Column(String(500), nullable=True)
     
     recipes = relationship("Recipe", back_populates="author")
+
+class RecipeIngredient(Base):
     __tablename__ = "recipe_ingredients"
 
     id = Column(Integer, primary_key=True, index=True)
