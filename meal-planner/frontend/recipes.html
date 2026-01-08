@@ -23,27 +23,7 @@
 
 <body
     class="bg-gradient-to-br from-slate-50 to-gray-100 text-slate-800 min-h-screen flex flex-col selection:bg-emerald-200 selection:text-emerald-900"
-    x-data="{ 
-    showModal: false, 
-    newRecipe: { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] },
-    newIng: { name: '', quantity: 1, unit: '' },
-    addIngredient() {
-        if(this.newIng.name) {
-            this.newRecipe.ingredients.push({...this.newIng});
-            this.newIng = { name: '', quantity: 1, unit: '' };
-        }
-    },
-    removeIngredient(index) {
-        this.newRecipe.ingredients.splice(index, 1);
-    },
-    async submitRecipe() {
-        const success = await $store.recipes.create(this.newRecipe);
-        if(success) {
-            this.showModal = false;
-            this.newRecipe = { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] };
-        }
-    }
-}" x-init="$store.recipes.fetch()">
+    x-data="recipesPage()">
 
     <!-- Navbar -->
     <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">

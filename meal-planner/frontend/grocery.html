@@ -21,62 +21,7 @@
     </style>
 </head>
 
-<body class="bg-gray-50 text-slate-800 min-h-screen flex flex-col" x-data="{
-    startDate: '',
-    endDate: '',
-    items: [],
-    loading: false,
-    newItem: { name: '', quantity: 1, unit: '' },
-    showAdd: false,
-    
-    init() {
-        const range = getWeekRange(new Date());
-        this.startDate = range.start;
-        this.endDate = range.end;
-        this.generateList();
-    },
-    async generateList() {
-        this.loading = true;
-        try {
-            const res = await fetch(`${API_URL}/grocery-list/?start=${this.startDate}&end=${this.endDate}`);
-            if(!res.ok) throw new Error('Failed');
-            this.items = await res.json();
-        } catch(e) {
-            console.error(e);
-            alert(Alpine.store('i18n').t('error_api'));
-        } finally {
-            this.loading = false;
-        }
-    },
-    async addManualItem() {
-        if(!this.newItem.name) return;
-        if(await $store.grocery.addManual(this.newItem)) {
-            this.newItem = { name: '', quantity: 1, unit: '' };
-            this.generateList();
-            this.showAdd = false;
-        }
-    },
-    async deleteManual(id) {
-        // Since we are showing a consolidated list, we don't have IDs for generated items.
-        // But for manual items (which we might fetch separately or if we added IDs to the DTO),
-        // we need to know if it is manual.
-        // Current API implementation returns GroceryItem schema which does NOT have ID.
-        // Limitation: We cannot delete manual items easily from the mixed list unless we update schema.
-        // Let's rely on 'original_ingredients[0] === Manual Item' check if we want to show delete button,
-        // BUT we need the ID.
-        // Quick Fix: I should have added ID to GroceryItem schema in step 1.
-        // Since I can't easily go back to backend step now without breaking flow, I will assume
-        // for now we just add. To delete, user might need to use adminer or I add a specific 'manage manual items' modal.
-        // OR: I can assume the user won't delete manual items often.
-        // BETTER: Let's add a separate section for 'Manual Items Management' that fetches ONLY manual items with IDs.
-    },
-    printList() {
-        window.print();
-    },
-    async finishShopping() {
-        if(!confirm(" Cela va vider la liste actuelle et marquer les repas comme 'Achetés' . Continuer ?")) return; try
-    { const res=await fetch(`${API_URL}/grocery-list/checkout?start=${this.startDate}&end=${this.endDate}`, {
-    method: 'POST' }); if(res.ok) { this.generateList(); } } catch(e) { alert("Erreur"); } } }" x-init="init()">
+<body class="bg-gray-50 text-slate-800 min-h-screen flex flex-col" x-data="groceryPage()">
 
     <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm ignore-print">
         <div class="container mx-auto flex justify-between items-center p-4">
@@ -228,13 +173,8 @@
                             </div>
                         </div>
 
-                        <button @click="async () => { 
-                        if(await $store.grocery.addManual(newItem)) { 
-                            showAdd = false; 
-                            generateList(); 
-                            newItem = { name: '', quantity: 1, unit: '', category: 'Divers' };
-                        }
-                    }" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2">
+                        <button @click="submitManualItem()"
+                            class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2">
                             <span>➕</span> Ajouter à la liste
                         </button>
 

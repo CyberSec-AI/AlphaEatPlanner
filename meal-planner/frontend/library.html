@@ -21,70 +21,7 @@
     </style>
 </head>
 
-<body class="bg-gray-50 text-slate-800 min-h-screen flex flex-col" x-data="{
-    library: [],
-    search: '',
-    loading: false,
-    
-    init() {
-        this.fetchLib();
-    },
-    async fetchLib() {
-        this.loading = true;
-        await $store.grocery.fetchLibrary();
-        this.library = $store.grocery.library;
-        this.loading = false;
-    },
-    get filteredItems() {
-        if(!this.search) return this.library;
-        const q = this.search.toLowerCase();
-        return this.library.filter(i => i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q));
-    },
-    async addToGrocery(item) {
-        const toAdd = {
-            name: item.name,
-            quantity: 1, // Default to 1
-            unit: item.default_unit || '',
-            category: item.category
-        };
-        if(await $store.grocery.addManual(toAdd)) {
-            // Visual feedback could be nice here
-            const btn = document.getElementById('btn-' + item.id);
-            if(btn) {
-                const original = btn.innerHTML;
-                btn.innerHTML = '✅';
-                setTimeout(() => btn.innerHTML = original, 1000);
-            }
-        }
-    },
-    async deleteItem(id) {
-        if(!confirm('Oublier cet article pour toujours ?')) return;
-        // Need to implement delete in store
-        const res = await fetch(`${API_URL}/grocery-list/library/${id}`, { method: 'DELETE' });
-        if(res.ok) this.fetchLib();
-    },
-    
-    // New Logic for Custom Add
-    showAdd: false,
-    newItem: { name: '', category: 'Divers', default_unit: '' },
-    openAddModal() {
-        this.newItem = { name: '', category: 'Divers', default_unit: '' };
-        this.showAdd = true;
-    },
-    async submitNewItem() {
-        if(!this.newItem.name) return;
-        // Create as manual item (this will auto-add to library due to backend logic)
-        const toAdd = {
-            name: this.newItem.name,
-            quantity: 1,
-            unit: '',
-            category: this.newItem.category
-        };
-        if(await $store.grocery.addManual(toAdd)) {
-            this.showAdd = false;
-            this.fetchLib();
-            // Show feedback?
-            alert(" Produit créé et ajouté à la liste !"); } } }">
+<body class="bg-gray-50 text-slate-800 min-h-screen flex flex-col" x-data="libraryPage()">
 
     <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div class="container mx-auto flex justify-between items-center p-4">
