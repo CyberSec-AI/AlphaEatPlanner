@@ -74,3 +74,18 @@ def delete_library_item(item_id: int, db: Session = Depends(get_db)):
     db.query(models.GroceryLibraryItem).filter(models.GroceryLibraryItem.id == item_id).delete()
     db.commit()
     return {"status": "ok"}
+
+@router.post("/checkout")
+def checkout_grocery_list(start: date, end: date, db: Session = Depends(get_db)):
+    # 1. Mark meal plan items as shopped
+    db.query(models.MealPlanItem).filter(
+        models.MealPlanItem.date >= start,
+        models.MealPlanItem.date <= end
+    ).update({models.MealPlanItem.is_shopped: True}, synchronize_session=False)
+    
+    # 2. Clear manual items (Assume all manual items currently in list are bought)
+    # Refinement: Maybe only checked ones? User said "supprime TOUT". So clear all manual.
+    db.query(models.GroceryManualItem).delete()
+    
+    db.commit()
+    return {"status": "ok", "message": "Grocery list cleared and items marked as shopped."}

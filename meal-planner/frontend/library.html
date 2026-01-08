@@ -62,8 +62,29 @@
         // Need to implement delete in store
         const res = await fetch(`${API_URL}/grocery-list/library/${id}`, { method: 'DELETE' });
         if(res.ok) this.fetchLib();
-    }
-}">
+    },
+    
+    // New Logic for Custom Add
+    showAdd: false,
+    newItem: { name: '', category: 'Divers', default_unit: '' },
+    openAddModal() {
+        this.newItem = { name: '', category: 'Divers', default_unit: '' };
+        this.showAdd = true;
+    },
+    async submitNewItem() {
+        if(!this.newItem.name) return;
+        // Create as manual item (this will auto-add to library due to backend logic)
+        const toAdd = {
+            name: this.newItem.name,
+            quantity: 1,
+            unit: '',
+            category: this.newItem.category
+        };
+        if(await $store.grocery.addManual(toAdd)) {
+            this.showAdd = false;
+            this.fetchLib();
+            // Show feedback?
+            alert(" Produit créé et ajouté à la liste !"); } } }">
 
     <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div class="container mx-auto flex justify-between items-center p-4">
@@ -116,12 +137,12 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <!-- Add New Mockup Card -->
-            <a href="grocery.html" @click="localStorage.setItem('openAdd', 'true')"
-                class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 rounded-2xl hover:border-cyan-500 hover:bg-cyan-50/50 transition cursor-pointer group h-40">
+            <button @click="openAddModal()"
+                class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 rounded-2xl hover:border-cyan-500 hover:bg-cyan-50/50 transition cursor-pointer group h-40 w-full">
                 <span class="text-4xl mb-2 group-hover:scale-110 transition">➕</span>
                 <span class="font-bold text-slate-400 group-hover:text-cyan-600">Nouveau Produit</span>
-                <span class="text-xs text-slate-400 text-center mt-1">(Via Liste de Courses)</span>
-            </a>
+                <span class="text-xs text-slate-400 text-center mt-1">(Créer ici)</span>
+            </button>
 
             <template x-for="item in filteredItems" :key="item.id">
                 <div

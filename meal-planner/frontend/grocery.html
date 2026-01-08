@@ -72,8 +72,12 @@
     },
     printList() {
         window.print();
-    }
-}" x-init="init()">
+    },
+    async finishShopping() {
+        if(!confirm(" Cela va vider la liste actuelle et marquer les repas comme 'Achetés' . Continuer ?")) return; try
+    { const res=await fetch(`${API_URL}/grocery-list/checkout?start=${this.startDate}&end=${this.endDate}`, {
+    method: 'POST' }); if(res.ok) { this.generateList(); // Should be empty now } } catch(e) { alert("Erreur"); } } }"
+    x-init="init()">
 
     <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm ignore-print">
         <div class="container mx-auto flex justify-between items-center p-4">
@@ -138,6 +142,11 @@
                 <button @click="printList()"
                     class="hidden md:flex bg-white hover:bg-slate-50 text-slate-600 px-6 py-3.5 rounded-xl border border-slate-200 shadow-sm font-bold transition items-center gap-2">
                     🖨️ <span x-text="$store.i18n.t('print')">Print</span>
+                </button>
+
+                <button @click="finishShopping()"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-200 transition transform active:scale-95 flex items-center gap-2">
+                    <span>✅</span> <span>Terminer</span>
                 </button>
             </div>
 

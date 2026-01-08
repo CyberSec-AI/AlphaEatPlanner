@@ -50,6 +50,7 @@ class MealPlanItem(Base):
     recipe_id = Column(Integer, ForeignKey("recipes.id"))
     servings = Column(Integer)
     meal_type = Column(String(20), default="dinner") # 'breakfast', 'lunch', 'dinner'
+    is_shopped = Column(Boolean, default=False)
 
     recipe = relationship("Recipe", back_populates="meal_plan_items")
 

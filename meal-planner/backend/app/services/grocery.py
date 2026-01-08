@@ -10,7 +10,8 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
     # Fetch meal plan items
     meal_items = db.query(models.MealPlanItem).filter(
         models.MealPlanItem.date >= start_date,
-        models.MealPlanItem.date <= end_date
+        models.MealPlanItem.date <= end_date,
+        models.MealPlanItem.is_shopped == False
     ).all()
     
     print(f"DEBUG: Found {len(meal_items)} meal items in range.")
