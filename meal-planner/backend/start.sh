@@ -6,7 +6,8 @@ echo "Running database migrations..."
 # Run migrations
 echo "Running database migrations..."
 # alembic upgrade head # We use our custom fixer for now
-python check_and_fix.py
+python check_and_fix.py || echo "⚠️ Warning: DB Fix script failed, changing permissions?"
+
 
 # Start server
 echo "Starting server..."

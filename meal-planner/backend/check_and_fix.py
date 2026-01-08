@@ -1,141 +1,84 @@
-import sys
 import os
 import time
-from sqlalchemy import text, inspect
+import sqlalchemy
+from sqlalchemy import text, create_engine, inspect
 
-# Add current directory to sys.path to ensure 'app' module is found
-sys.path.append(os.getcwd())
-
-from app.db import engine
-from app.models import Base
+# Standalone DB Fixer - No app imports to avoid path issues
+def get_db_url():
+    user = os.getenv("DB_USER", "user")
+    password = os.getenv("DB_PASSWORD", "password")
+    host = os.getenv("DB_HOST", "db")
+    db_name = os.getenv("DB_NAME", "mealplanner")
+    return f"mysql+pymysql://{user}:{password}@{host}:3306/{db_name}"
 
 def fix_database():
-    print("🚑 DÉBUT DU DIAGNOSTIC & RÉPARATION BASE DE DONNÉES 🚑")
-    print("-" * 50)
+    print("🚑 [STANDALONE] DÉBUT DU DIAGNOSTIC & RÉPARATION BASE DE DONNÉES 🚑")
+    
+    db_url = get_db_url()
+    print(f"🔌 Tentative de connexion...")
     
     connection = None
-    max_retries = 10
+    engine = None
+    max_retries = 15
+    
     for i in range(max_retries):
         try:
+            engine = create_engine(db_url)
             connection = engine.connect()
-            print("✅ Connexion à la base de données : SUCCÈS")
+            print("✅ Connexion réussie !")
             break
         except Exception as e:
-            print(f"❌ (Tentative {i+1}/{max_retries}) Connexion Impossible : {e}")
+            print(f"⏳ (Essai {i+1}/{max_retries}) Attente DB... ({e})")
             time.sleep(3)
-    
+            
     if not connection:
-        print("❌ ABANDON : Impossible de se connecter après plusieurs tentatives.")
+        print("❌ ECHEC FATAL: Impossible de se connecter à la DB.")
         return
 
-    inspector = inspect(engine)
-    tables = inspector.get_table_names()
-    print(f"📋 Tables existantes : {tables}")
+    try:
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        print(f"📋 Tables trouvées: {tables}")
 
-    with connection:
-        # 1. Check & Fix 'grocery_library' table
-        if 'grocery_library' not in tables:
-            print("⚠️ Table 'grocery_library' : MANQUANTE -> Création en cours...")
-            try:
-                # We use the raw SQL to be sure, or rely on create_all if models are updated
-                # Let's use raw SQL for v4 specific
-                sql = """
-                CREATE TABLE IF NOT EXISTS grocery_library (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR(255) NOT NULL,
-                    category VARCHAR(50) DEFAULT 'Divers',
-                    default_unit VARCHAR(50),
-                    usage_count INT DEFAULT 1,
-                    last_used DATE,
-                    UNIQUE KEY unique_item (name),
-                    INDEX ix_grocery_library_name (name)
-                );
-                """
-                connection.execute(text(sql))
-                print("   ✅ Table 'grocery_library' créée.")
-            except Exception as e:
-                print(f"   ❌ Échec création table: {e}")
-        else:
-            print("✅ Table 'grocery_library' : PRÉSENTE")
-
-        # 2. Check & Fix 'grocery_manual_items' -> column 'category'
-        if 'grocery_manual_items' in tables:
-            columns = [c['name'] for c in inspector.get_columns('grocery_manual_items')]
-            if 'category' not in columns:
-                print("⚠️ Colonne 'category' (grocery_manual_items) : MANQUANTE -> Ajout...")
-                try:
-                    connection.execute(text("ALTER TABLE grocery_manual_items ADD COLUMN category VARCHAR(50) DEFAULT 'Divers';"))
-                    print("   ✅ Colonne ajoutée.")
-                except Exception as e:
-                    print(f"   ❌ Échec ajout colonne: {e}")
-            else:
-                print("✅ Colonne 'category' (grocery_manual_items) : PRÉSENTE")
-        else:
-            print("⚠️ Table 'grocery_manual_items' n'existe pas encore (sera créée par l'app si nécessaire).")
-
-        # 3. Check & Fix 'meal_plan_items' -> column 'is_shopped'
-        if 'meal_plan_items' in tables:
-            columns = [c['name'] for c in inspector.get_columns('meal_plan_items')]
-            if 'is_shopped' not in columns:
-                print("⚠️ Colonne 'is_shopped' (meal_plan_items) : MANQUANTE -> Ajout...")
-                try:
-                    connection.execute(text("ALTER TABLE meal_plan_items ADD COLUMN is_shopped BOOLEAN DEFAULT FALSE;"))
-                    print("   ✅ Colonne ajoutée.")
-                except Exception as e:
-                    print(f"   ❌ Échec ajout colonne: {e}")
-            else:
-                print("✅ Colonne 'is_shopped' (meal_plan_items) : PRÉSENTE")
-
-        # 4. Check & Fix 'recipes' -> column 'image_url'
-        if 'recipes' in tables:
-            columns = [c['name'] for c in inspector.get_columns('recipes')]
-            if 'image_url' not in columns:
-                print("⚠️ Colonne 'image_url' (recipes) : MANQUANTE -> Ajout...")
-                try:
-                    connection.execute(text("ALTER TABLE recipes ADD COLUMN image_url VARCHAR(500) DEFAULT NULL;"))
-                    print("   ✅ Colonne ajoutée.")
-                except Exception as e:
-                    print(f"   ❌ Échec ajout colonne: {e}")
-            else:
-                print("✅ Colonne 'image_url' (recipes) : PRÉSENTE")
-
-        # 5. Check & Fix 'users' -> columns 'full_name', 'profile_picture_url'
-        if 'users' in tables:
-            columns = [c['name'] for c in inspector.get_columns('users')]
-            if 'full_name' not in columns:
-                print("⚠️ Colonne 'full_name' (users) : MANQUANTE -> Ajout...")
-                try:
-                    connection.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR(255) DEFAULT NULL;"))
-                    print("   ✅ Colonne 'full_name' ajoutée.")
-                except Exception as e:
-                    print(f"   ❌ Échec: {e}")
-            
-            if 'profile_picture_url' not in columns:
-                print("⚠️ Colonne 'profile_picture_url' (users) : MANQUANTE -> Ajout...")
-                try:
-                    connection.execute(text("ALTER TABLE users ADD COLUMN profile_picture_url VARCHAR(500) DEFAULT NULL;"))
-                    print("   ✅ Colonne 'profile_picture_url' ajoutée.")
-                except Exception as e:
-                    print(f"   ❌ Échec: {e}")
-
-        # 6. Check & Fix 'recipes' -> column 'author_id'
-        if 'recipes' in tables:
-            columns = [c['name'] for c in inspector.get_columns('recipes')]
-            if 'author_id' not in columns:
-                print("⚠️ Colonne 'author_id' (recipes) : MANQUANTE -> Ajout...")
-                try:
-                    connection.execute(text("ALTER TABLE recipes ADD COLUMN author_id INT DEFAULT NULL;"))
-                    connection.execute(text("ALTER TABLE recipes ADD CONSTRAINT fk_recipes_author FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL;"))
-                    print("   ✅ Colonne 'author_id' ajoutée.")
-                except Exception as e:
-                    print(f"   ❌ Échec ajout colonne: {e}")
-            else:
-                print("✅ Colonne 'author_id' (recipes) : PRÉSENTE")
+        with connection.begin() as trans:
+            # 1. USERS: Full Name & Profile Pic
+            if 'users' in tables:
+                cols = [c['name'] for c in inspector.get_columns('users')]
+                print(f"👤 Colonnes Users: {cols}")
                 
-        connection.commit()
+                if 'full_name' not in cols:
+                    print("🛠️ Ajout 'full_name'...")
+                    connection.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR(255) DEFAULT NULL;"))
+                
+                if 'profile_picture_url' not in cols:
+                    print("🛠️ Ajout 'profile_picture_url'...")
+                    connection.execute(text("ALTER TABLE users ADD COLUMN profile_picture_url VARCHAR(500) DEFAULT NULL;"))
 
-    print("-" * 50)
-    print("🚀 RÉPARATION TERMINÉE. REDÉMARREZ L'INTERFACE SI NÉCESSAIRE.")
+            # 2. RECIPES: Author ID
+            if 'recipes' in tables:
+                cols = [c['name'] for c in inspector.get_columns('recipes')]
+                print(f"🍳 Colonnes Recipes: {cols}")
+                
+                if 'author_id' not in cols:
+                    print("🛠️ Ajout 'author_id'...")
+                    connection.execute(text("ALTER TABLE recipes ADD COLUMN author_id INT DEFAULT NULL;"))
+                    try:
+                        connection.execute(text("ALTER TABLE recipes ADD CONSTRAINT fk_recipes_author FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL;"))
+                    except Exception as ex:
+                        print(f"⚠️ Warning FK (peut-être déjà là): {ex}")
+                
+                if 'image_url' not in cols:
+                     print("🛠️ Ajout 'image_url'...")
+                     connection.execute(text("ALTER TABLE recipes ADD COLUMN image_url VARCHAR(500) DEFAULT NULL;"))
+
+    except Exception as e:
+        print(f"💥 Erreur inattendue pendant la réparation: {e}")
+    finally:
+        if connection:
+            connection.close()
+    
+    print("🏁 Fin du diagnostic.")
 
 if __name__ == "__main__":
     fix_database()
+
