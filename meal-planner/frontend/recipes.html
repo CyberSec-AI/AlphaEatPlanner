@@ -7,7 +7,7 @@
     <title>Mes Recettes - EatPlanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="app.js?v=12"></script>
+    <script src="app.js?v=14"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
@@ -83,6 +83,9 @@
                 <a href="library.html"
                     class="hover:text-emerald-600 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
                     x-text="'Frigo Magique'">Frigo Magique</a>
+                <a href="settings.html"
+                    class="hover:text-slate-800 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
+                    x-text="$store.i18n.t('settings')">Settings</a>
 
                 <button @click="$store.i18n.toggle()"
                     class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-xs font-black text-slate-600 ml-2"
@@ -91,6 +94,10 @@
 
             <!-- Mobile Header Controls -->
             <div class="md:hidden flex items-center gap-3">
+                <a href="settings.html"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                    ⚙️
+                </a>
                 <button @click="$store.i18n.toggle()"
                     class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
                     <span x-text="$store.i18n.lang.toUpperCase()"></span>
@@ -129,6 +136,18 @@
                         </template>
                         <div x-show="!recipe.image_url"
                             class="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
+
+                        <!-- Author Badge Overlay -->
+                        <div
+                            class="absolute bottom-2 left-2 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
+                            <template x-if="recipe.author && recipe.author.profile_picture_url">
+                                <img :src="recipe.author.profile_picture_url" class="w-5 h-5 rounded-full object-cover">
+                            </template>
+                            <span x-show="!recipe.author || !recipe.author.profile_picture_url"
+                                class="text-xs">👤</span>
+                            <span class="text-[10px] font-bold text-slate-600"
+                                x-text="'Auteur : ' + (recipe.author ? (recipe.author.full_name || recipe.author.username) : 'Inconnu')"></span>
+                        </div>
                     </div>
 
                     <div class="p-7 flex-grow flex flex-col">

@@ -11,9 +11,11 @@ def read_recipes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     recipes = crud.get_recipes(db, skip=skip, limit=limit)
     return recipes
 
+from .. import crud, schemas, models, deps
+
 @router.post("/", response_model=schemas.Recipe)
-def create_recipe(recipe: schemas.RecipeCreate, db: Session = Depends(get_db)):
-    return crud.create_recipe(db=db, recipe=recipe)
+def create_recipe(recipe: schemas.RecipeCreate, db: Session = Depends(get_db), current_user: models.User = Depends(deps.get_current_user)):
+    return crud.create_recipe(db=db, recipe=recipe, author_id=current_user.id)
 
 @router.get("/{recipe_id}", response_model=schemas.Recipe)
 def read_recipe(recipe_id: int, db: Session = Depends(get_db)):

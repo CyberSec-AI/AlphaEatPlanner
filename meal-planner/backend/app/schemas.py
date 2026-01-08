@@ -20,6 +20,24 @@ class Ingredient(IngredientBase):
         from_attributes = True
 
 # Recipe Schemas
+class UserBase(BaseModel):
+    username: str
+    full_name: Optional[str] = None
+    profile_picture_url: Optional[str] = None
+
+class UserCreate(UserBase):
+    password: str
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    profile_picture_url: Optional[str] = None
+    password: Optional[str] = None
+
+class User(UserBase):
+    id: int
+    class Config:
+        from_attributes = True
+
 class RecipeBase(BaseModel):
     title: str
     description: Optional[str] = None
@@ -39,9 +57,11 @@ class RecipeUpdate(RecipeBase):
 class Recipe(RecipeBase):
     id: int
     ingredients: List[Ingredient] = []
-
+    author: Optional[User] = None  # Return author info
+    
     class Config:
         from_attributes = True
+
 
 # Meal Plan Schemas
 class MealPlanItemBase(BaseModel):

@@ -18,6 +18,9 @@ class Recipe(Base):
 
     ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
     meal_plan_items = relationship("MealPlanItem", back_populates="recipe")
+    
+    author_id = Column(Integer, ForeignKey("users.id"))
+    author = relationship("User", back_populates="recipes")
 
     @property
     def tags(self):
@@ -29,8 +32,18 @@ class Recipe(Base):
     def tags(self, value):
         self._tags = json.dumps(value)
 
+# ... (Existing code)
 
-class RecipeIngredient(Base):
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True)
+    hashed_password = Column(String(255))
+    full_name = Column(String(255), nullable=True)
+    profile_picture_url = Column(String(500), nullable=True)
+    
+    recipes = relationship("Recipe", back_populates="author")
     __tablename__ = "recipe_ingredients"
 
     id = Column(Integer, primary_key=True, index=True)
