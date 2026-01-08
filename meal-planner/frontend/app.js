@@ -1,4 +1,40 @@
 const API_URL = "";
+window.API_URL = API_URL; // Make it globally explicit
+
+// --- DEBUGGER VISUEL ---
+(function () {
+    const debugDiv = document.createElement('div');
+    debugDiv.style.cssText = "position:fixed; bottom:0; left:0; right:0; height:150px; background:rgba(0,0,0,0.85); color:#0f0; font-family:monospace; font-size:12px; overflow:auto; z-index:9999; padding:10px; pointer-events:none;";
+    document.body.appendChild(debugDiv);
+
+    function logToScreen(msg, color = '#0f0') {
+        const line = document.createElement('div');
+        line.style.color = color;
+        line.textContent = "> " + msg;
+        debugDiv.appendChild(line);
+        debugDiv.scrollTop = debugDiv.scrollHeight;
+    }
+
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    console.log = function (...args) {
+        originalLog.apply(console, args);
+        logToScreen(args.join(' '));
+    };
+
+    console.error = function (...args) {
+        originalError.apply(console, args);
+        logToScreen(args.join(' '), '#f55');
+    };
+
+    window.onerror = function (msg, url, line) {
+        logToScreen(`ERROR: ${msg} (${url}:${line})`, '#f00');
+    };
+
+    logToScreen("DEBUGGER ACTIVE - Waiting for actions...");
+})();
+// -----------------------
 
 // Auth Logic
 document.addEventListener('alpine:init', () => {
