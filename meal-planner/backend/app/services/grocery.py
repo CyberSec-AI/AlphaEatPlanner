@@ -57,5 +57,4 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
             original_ingredients=["Generated"]
         ))
     
-    print(f"DEBUG: Final generated list has {len(result)} items.")
     return sorted(result, key=lambda x: x.name)
