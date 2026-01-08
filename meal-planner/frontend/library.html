@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Frigo - EatPlanner</title>
+    <title>Mon Frigo Magique - EatPlanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
@@ -42,7 +42,7 @@
                     class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
                     x-text="$store.i18n.t('grocery')">Grocery</a>
                 <a href="library.html" class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg"
-                    x-text="'Frigo'">Frigo</a>
+                    x-text="'Frigo Magique'">Frigo Magique</a>
 
                 <div class="h-4 w-px bg-slate-300 mx-1"></div>
                 <button @click="$store.i18n.toggle()"
@@ -58,7 +58,7 @@
             <div>
                 <h1 class="text-3xl font-extrabold text-slate-800 flex items-center gap-2">
                     ❄️ <span class="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">Frigo
-                        Intelligent</span>
+                        Magique</span>
                 </h1>
                 <p class="text-slate-500">Gérez vos articles habituels et ajoutez-les rapidement.</p>
             </div>
