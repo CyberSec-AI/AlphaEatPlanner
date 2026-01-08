@@ -85,6 +85,39 @@ def fix_database():
                     print(f"   ❌ Échec ajout colonne: {e}")
             else:
                 print("✅ Colonne 'image_url' (recipes) : PRÉSENTE")
+
+        # 5. Check & Fix 'users' -> columns 'full_name', 'profile_picture_url'
+        if 'users' in tables:
+            columns = [c['name'] for c in inspector.get_columns('users')]
+            if 'full_name' not in columns:
+                print("⚠️ Colonne 'full_name' (users) : MANQUANTE -> Ajout...")
+                try:
+                    connection.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR(255) DEFAULT NULL;"))
+                    print("   ✅ Colonne 'full_name' ajoutée.")
+                except Exception as e:
+                    print(f"   ❌ Échec: {e}")
+            
+            if 'profile_picture_url' not in columns:
+                print("⚠️ Colonne 'profile_picture_url' (users) : MANQUANTE -> Ajout...")
+                try:
+                    connection.execute(text("ALTER TABLE users ADD COLUMN profile_picture_url VARCHAR(500) DEFAULT NULL;"))
+                    print("   ✅ Colonne 'profile_picture_url' ajoutée.")
+                except Exception as e:
+                    print(f"   ❌ Échec: {e}")
+
+        # 6. Check & Fix 'recipes' -> column 'author_id'
+        if 'recipes' in tables:
+            columns = [c['name'] for c in inspector.get_columns('recipes')]
+            if 'author_id' not in columns:
+                print("⚠️ Colonne 'author_id' (recipes) : MANQUANTE -> Ajout...")
+                try:
+                    connection.execute(text("ALTER TABLE recipes ADD COLUMN author_id INT DEFAULT NULL;"))
+                    connection.execute(text("ALTER TABLE recipes ADD CONSTRAINT fk_recipes_author FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL;"))
+                    print("   ✅ Colonne 'author_id' ajoutée.")
+                except Exception as e:
+                    print(f"   ❌ Échec ajout colonne: {e}")
+            else:
+                print("✅ Colonne 'author_id' (recipes) : PRÉSENTE")
                 
         connection.commit()
 

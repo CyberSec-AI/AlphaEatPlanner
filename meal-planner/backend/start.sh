@@ -3,7 +3,10 @@ set -e
 
 # Run migrations
 echo "Running database migrations..."
-alembic upgrade head
+# Run migrations
+echo "Running database migrations..."
+# alembic upgrade head # We use our custom fixer for now
+python check_and_fix.py
 
 # Start server
 echo "Starting server..."
