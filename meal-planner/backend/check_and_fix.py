@@ -1,6 +1,11 @@
 import sys
 import os
+import time
 from sqlalchemy import text, inspect
+
+# Add current directory to sys.path to ensure 'app' module is found
+sys.path.append(os.getcwd())
+
 from app.db import engine
 from app.models import Base
 
@@ -8,11 +13,19 @@ def fix_database():
     print("🚑 DÉBUT DU DIAGNOSTIC & RÉPARATION BASE DE DONNÉES 🚑")
     print("-" * 50)
     
-    try:
-        connection = engine.connect()
-        print("✅ Connexion à la base de données : SUCCÈS")
-    except Exception as e:
-        print(f"❌ Connexion Impossible : {e}")
+    connection = None
+    max_retries = 10
+    for i in range(max_retries):
+        try:
+            connection = engine.connect()
+            print("✅ Connexion à la base de données : SUCCÈS")
+            break
+        except Exception as e:
+            print(f"❌ (Tentative {i+1}/{max_retries}) Connexion Impossible : {e}")
+            time.sleep(3)
+    
+    if not connection:
+        print("❌ ABANDON : Impossible de se connecter après plusieurs tentatives.")
         return
 
     inspector = inspect(engine)
