@@ -5,6 +5,12 @@ from sqlalchemy import text, create_engine, inspect
 
 # Standalone DB Fixer - No app imports to avoid path issues
 def get_db_url():
+    # Priority 1: Use the full DATABASE_URL if available (passed by Docker)
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        return db_url
+        
+    # Priority 2: Fallback to individual variables (or defaults)
     user = os.getenv("DB_USER", "user")
     password = os.getenv("DB_PASSWORD", "password")
     host = os.getenv("DB_HOST", "db")
