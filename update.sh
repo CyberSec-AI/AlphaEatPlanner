@@ -69,7 +69,14 @@ fi
 echo "🔥 Redémarrage et Construction..."
 cd "$INSTALL_DIR/AlphaEatPlanner-main"
 # Force build pour les nouvelles dépendances Python
+# Force build pour les nouvelles dépendances Python
 docker compose -f meal-planner/deploy/docker-compose.yml up -d --build --remove-orphans
 
-echo "✅ Mise à jour terminée !"
+echo "⏳ Attente du démarrage de la base de données..."
+sleep 10
+
+echo "Running DB Migrations..."
+docker exec -i meal_planner_db mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < meal-planner/deploy/update_db.sql || true
+docker exec -i meal_planner_db mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < meal-planner/deploy/update_db_v4.sql || true
+docker exec -i meal_planner_db mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < meal-planner/deploy/update_db_v5.sql || true
 echo "👉 Site accessible sur http://$(curl -s ifconfig.me):3000"
