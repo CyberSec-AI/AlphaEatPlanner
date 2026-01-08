@@ -7,7 +7,7 @@
     <title>Ma Liste - EatPlanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=12"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
@@ -18,35 +18,76 @@
         [x-cloak] {
             display: none !important;
         }
+
+        @keyframes blob {
+            0% {
+                transform: translate(0px, 0px) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+
+            100% {
+                transform: translate(0px, 0px) scale(1);
+            }
+        }
+
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
     </style>
 </head>
 
-<body class="bg-gray-50 text-slate-800 min-h-screen flex flex-col" x-data="groceryPage()">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col relative" x-data="groceryPage()">
 
-    <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm ignore-print">
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-40">
+        <div
+            class="absolute top-0 right-1/4 w-[500px] h-[500px] bg-yellow-50 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob">
+        </div>
+        <div
+            class="absolute bottom-0 left-10 w-[400px] h-[400px] bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000">
+        </div>
+    </div>
+
+    <nav
+        class="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-white/50 shadow-sm relative z-40 ignore-print">
         <div class="container mx-auto flex justify-between items-center p-4">
             <a href="index.html"
                 class="text-2xl font-extrabold tracking-tight flex items-center gap-2 hover:opacity-80 transition bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-                <span>🥗</span> <span x-text="$store.i18n.t('title')">Meal Planner</span>
+                <span class="text-3xl">🛒</span> <span x-text="$store.i18n.t('title')">Meal Planner</span>
             </a>
-            <div class="flex items-center gap-2 md:gap-6 text-sm font-semibold text-slate-600">
-                <a href="index.html" class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+            <div class="hidden md:flex items-center gap-2 md:gap-6 text-sm font-bold text-slate-500">
+                <a href="index.html"
+                    class="hover:text-emerald-600 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
                     x-text="$store.i18n.t('dashboard')">Dashboard</a>
                 <a href="recipes.html"
-                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    class="hover:text-emerald-600 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
                     x-text="$store.i18n.t('recipes')">Recipes</a>
                 <a href="planner.html"
-                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    class="hover:text-emerald-600 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
                     x-text="$store.i18n.t('planner')">Planner</a>
-                <a href="grocery.html" class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg"
+                <a href="grocery.html" class="text-emerald-700 bg-emerald-100/50 px-3 py-1.5 rounded-full"
                     x-text="$store.i18n.t('grocery')">Grocery</a>
                 <a href="library.html"
-                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    class="hover:text-emerald-600 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
                     x-text="'Frigo Magique'">Frigo Magique</a>
-                <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
                 <button @click="$store.i18n.toggle()"
-                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-xs font-bold uppercase text-slate-700"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-xs font-black text-slate-600 ml-2"
                     x-text="$store.i18n.lang">FR</button>
+            </div>
+            <!-- Mobile Header Controls -->
+            <div class="md:hidden flex items-center gap-3">
+                <button @click="$store.i18n.toggle()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
+                    <span x-text="$store.i18n.lang.toUpperCase()"></span>
+                </button>
             </div>
         </div>
     </nav>

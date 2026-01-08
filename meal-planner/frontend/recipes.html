@@ -7,7 +7,7 @@
     <title>Mes Recettes - EatPlanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=12"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
@@ -18,42 +18,82 @@
         [x-cloak] {
             display: none !important;
         }
+
+        @keyframes blob {
+            0% {
+                transform: translate(0px, 0px) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+
+            100% {
+                transform: translate(0px, 0px) scale(1);
+            }
+        }
+
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
     </style>
 </head>
 
 <body
-    class="bg-gradient-to-br from-slate-50 to-gray-100 text-slate-800 min-h-screen flex flex-col selection:bg-emerald-200 selection:text-emerald-900"
+    class="bg-slate-50 text-slate-800 min-h-screen flex flex-col relative selection:bg-emerald-200 selection:text-emerald-900"
     x-data="recipesPage()">
 
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-40">
+        <div
+            class="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob">
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000">
+        </div>
+    </div>
+
     <!-- Navbar -->
-    <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-white/50 shadow-sm relative z-40">
         <div class="container mx-auto flex justify-between items-center p-4">
             <a href="index.html"
                 class="text-2xl font-extrabold tracking-tight flex items-center gap-2 hover:opacity-80 transition bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-                <span>🥗</span> <span x-text="$store.i18n.t('title')">Meal Planner</span>
+                <span class="text-3xl">🍳</span> <span x-text="$store.i18n.t('title')">Meal Planner</span>
             </a>
-            <div class="flex items-center gap-2 md:gap-6 text-sm font-semibold text-slate-600">
-                <a href="index.html" class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+            <div class="hidden md:flex items-center gap-2 md:gap-6 text-sm font-bold text-slate-500">
+                <a href="index.html"
+                    class="hover:text-emerald-600 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
                     x-text="$store.i18n.t('dashboard')">Dashboard</a>
-                <a href="recipes.html" class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg"
+                <a href="recipes.html" class="text-emerald-700 bg-emerald-100/50 px-3 py-1.5 rounded-full"
                     x-text="$store.i18n.t('recipes')">Recipes</a>
                 <a href="planner.html"
-                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    class="hover:text-emerald-600 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
                     x-text="$store.i18n.t('planner')">Planner</a>
                 <a href="grocery.html"
-                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    class="hover:text-emerald-600 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
                     x-text="$store.i18n.t('grocery')">Grocery</a>
                 <a href="library.html"
-                    class="hover:text-emerald-600 transition px-2 py-1 rounded-lg hover:bg-emerald-50"
+                    class="hover:text-emerald-600 transition px-3 py-1.5 rounded-full hover:bg-emerald-50"
                     x-text="'Frigo Magique'">Frigo Magique</a>
 
-                <div class="h-4 w-px bg-slate-300 mx-1"></div>
-
-                <!-- Lang Toggle -->
                 <button @click="$store.i18n.toggle()"
-                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-xs font-bold uppercase text-slate-700"
-                    x-text="$store.i18n.lang">
-                    FR
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-xs font-black text-slate-600 ml-2"
+                    x-text="$store.i18n.lang">FR</button>
+            </div>
+
+            <!-- Mobile Header Controls -->
+            <div class="md:hidden flex items-center gap-3">
+                <button @click="$store.i18n.toggle()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
+                    <span x-text="$store.i18n.lang.toUpperCase()"></span>
                 </button>
             </div>
         </div>
@@ -75,10 +115,10 @@
         </div>
 
         <!-- Recipe List -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pb-32">
             <template x-for="recipe in $store.recipes.list" :key="recipe.id">
                 <div
-                    class="bg-white rounded-3xl shadow-sm hover:shadow-xl hover:shadow-emerald-100/50 transition-all duration-300 border border-slate-100 group flex flex-col relative overflow-hidden">
+                    class="bg-white rounded-[2rem] shadow-sm hover:shadow-2xl hover:shadow-emerald-200/40 transition-all duration-300 border border-slate-100 hover:border-emerald-100 group flex flex-col relative overflow-hidden transform hover:-translate-y-1">
 
                     <!-- Decorative gradient top or Image -->
                     <div class="h-32 bg-slate-100 relative overflow-hidden">
