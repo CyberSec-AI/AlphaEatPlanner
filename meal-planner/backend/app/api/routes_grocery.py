@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import date
-from .. import schemas, crud
+from .. import schemas, crud, models
 from ..services import grocery
 from ..db import get_db
 
@@ -34,30 +34,36 @@ def get_grocery_list(start: date, end: date, db: Session = Depends(get_db)):
 
 @router.post("/manual", response_model=schemas.GroceryManualItem)
 def create_manual_item(item: schemas.GroceryManualItemCreate, db: Session = Depends(get_db)):
-    # 1. Create the manual item in the grocery list
-    new_item = crud.create_manual_grocery_item(db, item)
-    
-    # 2. Smart Save: Add or Update into Library
-    # Check if exists
-    existing_lib = db.query(models.GroceryLibraryItem).filter(models.GroceryLibraryItem.name == item.name).first()
-    if existing_lib:
-        existing_lib.usage_count += 1
-        existing_lib.last_used = date.today()
-        # Update category if user changed it? Let's assume most recent category is preferred.
-        existing_lib.category = item.category
-        if item.unit:
-             existing_lib.default_unit = item.unit
-    else:
-        new_lib = models.GroceryLibraryItem(
-            name=item.name,
-            category=item.category,
-            default_unit=item.unit,
-            last_used=date.today()
-        )
-        db.add(new_lib)
-    
-    db.commit()
-    return new_item
+    try:
+        # 1. Create the manual item in the grocery list
+        new_item = crud.create_manual_grocery_item(db, item)
+        
+        # 2. Smart Save: Add or Update into Library
+        # Check if exists
+        existing_lib = db.query(models.GroceryLibraryItem).filter(models.GroceryLibraryItem.name == item.name).first()
+        if existing_lib:
+            existing_lib.usage_count += 1
+            existing_lib.last_used = date.today()
+            # Update category if user changed it? Let's assume most recent category is preferred.
+            existing_lib.category = item.category
+            if item.unit:
+                 existing_lib.default_unit = item.unit
+        else:
+            new_lib = models.GroceryLibraryItem(
+                name=item.name,
+                category=item.category,
+                default_unit=item.unit,
+                last_used=date.today()
+            )
+            db.add(new_lib)
+        
+        db.commit()
+        return new_item
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR Create Manual: {e}")
+        # Re-raise or return 500? FastAPI handles re-raise better usually, but returns 500.
+        raise e
 
 @router.delete("/manual/{item_id}")
 def delete_manual_item(item_id: int, db: Session = Depends(get_db)):
@@ -77,15 +83,19 @@ def delete_library_item(item_id: int, db: Session = Depends(get_db)):
 
 @router.post("/checkout")
 def checkout_grocery_list(start: date, end: date, db: Session = Depends(get_db)):
-    # 1. Mark meal plan items as shopped
-    db.query(models.MealPlanItem).filter(
-        models.MealPlanItem.date >= start,
-        models.MealPlanItem.date <= end
-    ).update({models.MealPlanItem.is_shopped: True}, synchronize_session=False)
-    
-    # 2. Clear manual items (Assume all manual items currently in list are bought)
-    # Refinement: Maybe only checked ones? User said "supprime TOUT". So clear all manual.
-    db.query(models.GroceryManualItem).delete()
-    
-    db.commit()
-    return {"status": "ok", "message": "Grocery list cleared and items marked as shopped."}
+    try:
+        # 1. Mark meal plan items as shopped
+        db.query(models.MealPlanItem).filter(
+            models.MealPlanItem.date >= start,
+            models.MealPlanItem.date <= end
+        ).update({models.MealPlanItem.is_shopped: True}, synchronize_session=False)
+        
+        # 2. Clear manual items (Assume all manual items currently in list are bought)
+        db.query(models.GroceryManualItem).delete()
+        
+        db.commit()
+        return {"status": "ok", "message": "Grocery list cleared and items marked as shopped."}
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR Checkout: {e}")
+        return {"status": "error", "detail": str(e)}
