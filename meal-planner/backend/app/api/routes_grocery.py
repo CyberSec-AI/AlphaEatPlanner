@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import date
@@ -74,6 +74,26 @@ def delete_manual_item(item_id: int, db: Session = Depends(get_db)):
 def get_grocery_library(db: Session = Depends(get_db)):
     # Return items sorted by usage count (most frequent first)
     return db.query(models.GroceryLibraryItem).order_by(models.GroceryLibraryItem.usage_count.desc()).all()
+
+@router.put("/library/{item_id}", response_model=schemas.GroceryLibraryItem)
+def update_library_item(item_id: int, item: schemas.GroceryLibraryItemUpdate, db: Session = Depends(get_db)):
+    db_item = db.query(models.GroceryLibraryItem).filter(models.GroceryLibraryItem.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    if item.name:
+        db_item.name = item.name
+    if item.category:
+        db_item.category = item.category
+    # Check if field is present in update data to allow creating empty string or null?
+    # Pydantic optional defaults to None usually if not sent. 
+    # Let's assume sending value means update.
+    if item.default_unit is not None:
+        db_item.default_unit = item.default_unit
+        
+    db.commit()
+    db.refresh(db_item)
+    return db_item
 
 @router.delete("/library/{item_id}")
 def delete_library_item(item_id: int, db: Session = Depends(get_db)):

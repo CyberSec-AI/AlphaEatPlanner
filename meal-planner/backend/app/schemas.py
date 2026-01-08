@@ -86,6 +86,11 @@ class GroceryManualItem(GroceryManualItemBase):
     class Config:
         from_attributes = True
 
+class GroceryLibraryItemUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    default_unit: Optional[str] = None
+
 class GroceryLibraryItem(BaseModel):
     id: int
     name: str

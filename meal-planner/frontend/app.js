@@ -105,6 +105,20 @@ document.addEventListener('alpine:init', () => {
             }
             return false;
         },
+        async update(id, recipe) {
+            try {
+                const res = await fetch(`${API_URL}/recipes/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(recipe)
+                });
+                if (res.ok) { this.fetch(); return true; }
+            } catch (e) {
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
+            }
+            return false;
+        },
         async delete(id) {
             if (!confirm(Alpine.store('i18n').t('delete_confirm'))) return;
             try {
@@ -250,6 +264,24 @@ document.addEventListener('alpine:init', () => {
                 alert(Alpine.store('i18n').t('error_api'));
                 return false;
             }
+        },
+
+        async updateLibraryItem(id, item) {
+            try {
+                const res = await fetch(`${API_URL}/grocery-list/library/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
+                if (res.ok) {
+                    this.fetchLibrary();
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                alert(Alpine.store('i18n').t('error_api'));
+                return false;
+            }
         }
     });
 
@@ -260,16 +292,16 @@ document.addEventListener('alpine:init', () => {
         loading: false,
         showAdd: false,
         newItem: { name: '', category: 'Divers', default_unit: '' },
+        editMode: false,
+        editingId: null,
 
         init() {
-            // Ensure library is loaded
             if (Alpine.store('grocery').library.length === 0) {
                 Alpine.store('grocery').fetchLibrary();
             }
         },
 
         get filteredItems() {
-            // Use store data directly
             const lib = Alpine.store('grocery').library;
             if (!this.search) return lib;
             const q = this.search.toLowerCase();
@@ -284,7 +316,6 @@ document.addEventListener('alpine:init', () => {
                 category: item.category
             };
             if (await Alpine.store('grocery').addManual(toAdd)) {
-                // Feedback
                 const btn = document.getElementById('btn-' + item.id);
                 if (btn) {
                     const original = btn.innerHTML;
@@ -304,21 +335,47 @@ document.addEventListener('alpine:init', () => {
 
         openAddModal() {
             this.newItem = { name: '', category: 'Divers', default_unit: '' };
+            this.editMode = false;
+            this.editingId = null;
+            this.showAdd = true;
+        },
+
+        openEditModal(item) {
+            this.newItem = { name: item.name, category: item.category, default_unit: item.default_unit || '' };
+            this.editMode = true;
+            this.editingId = item.id;
             this.showAdd = true;
         },
 
         async submitNewItem() {
             if (!this.newItem.name) return;
-            const toAdd = {
-                name: this.newItem.name,
-                quantity: this.newItem.quantity || 1,
-                unit: this.newItem.default_unit || '',
-                category: this.newItem.category
-            };
-            if (await Alpine.store('grocery').addManual(toAdd)) {
-                this.showAdd = false;
-                alert("Produit créé !");
-                this.newItem = { name: '', category: 'Divers', default_unit: '' }; // Reset
+
+            if (this.editMode && this.editingId) {
+                // Update Logic
+                if (await Alpine.store('grocery').updateLibraryItem(this.editingId, this.newItem)) {
+                    this.showAdd = false;
+                    alert("Produit mis à jour !");
+                    this.newItem = { name: '', category: 'Divers', default_unit: '' };
+                }
+            } else {
+                // Create Logic (Add Manual triggers Smart Save which creates Library Item)
+                // Wait, adding manual adds to SHOPPING LIST. 
+                // Creating a library item directly? The backend implementation of 'Smart Add' happens on manual add.
+                // To just "add to library" without adding to list is not yet implemented in backend strictly, 
+                // but we can simulate by adding a manual item if that's the desired flow, OR we just support editing for now.
+                // The previous flow was: Add manual item -> Adds to list AND library.
+                // So calling addManual is correct for "New Product".
+                const toAdd = {
+                    name: this.newItem.name,
+                    quantity: this.newItem.quantity || 1,
+                    unit: this.newItem.default_unit || '',
+                    category: this.newItem.category
+                };
+                if (await Alpine.store('grocery').addManual(toAdd)) {
+                    this.showAdd = false;
+                    alert("Produit créé !");
+                    this.newItem = { name: '', category: 'Divers', default_unit: '' }; // Reset
+                }
             }
         }
     }));
@@ -486,9 +543,26 @@ document.addEventListener('alpine:init', () => {
         showModal: false,
         newRecipe: { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] },
         newIng: { name: '', quantity: 1, unit: '' },
+        editMode: false,
+        editingId: null,
 
         init() {
             Alpine.store('recipes').fetch();
+        },
+
+        openAddModal() {
+            this.newRecipe = { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] };
+            this.editMode = false;
+            this.editingId = null;
+            this.showModal = true;
+        },
+
+        openEditModal(recipe) {
+            // Deep copy to avoid mutating store directly
+            this.newRecipe = JSON.parse(JSON.stringify(recipe));
+            this.editMode = true;
+            this.editingId = recipe.id;
+            this.showModal = true;
         },
 
         addIngredient() {
@@ -503,10 +577,18 @@ document.addEventListener('alpine:init', () => {
         },
 
         async submitRecipe() {
-            const success = await Alpine.store('recipes').create(this.newRecipe);
+            let success = false;
+            if (this.editMode && this.editingId) {
+                success = await Alpine.store('recipes').update(this.editingId, this.newRecipe);
+            } else {
+                success = await Alpine.store('recipes').create(this.newRecipe);
+            }
+
             if (success) {
                 this.showModal = false;
                 this.newRecipe = { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] };
+                this.editMode = false;
+                this.editingId = null;
             }
         }
     }));
@@ -608,6 +690,8 @@ const TRANSLATIONS = {
         manual_items: "Articles Manuels",
         add_item: "Ajouter un article",
         item_name: "Nom de l'article",
-        error_api: "Erreur de connexion : Impossible d'enregistrer/charger les données. Veuillez vérifier votre internet ou le serveur."
+        error_api: "Erreur de connexion : Impossible d'enregistrer/charger les données. Veuillez vérifier votre internet ou le serveur.",
+        edit_recipe: "Modifier la Recette",
+        update: "Mettre à jour"
     }
 };
