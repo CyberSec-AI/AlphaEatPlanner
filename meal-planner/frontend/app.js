@@ -240,6 +240,10 @@ document.addEventListener('alpine:init', () => {
                 if (res.ok) {
                     this.fetchLibrary();
                     return true;
+                } else {
+                    // Alert backend error
+                    const err = await res.json().catch(() => ({ detail: res.statusText }));
+                    alert("Erreur: " + (err.detail || "Erreur inconnue"));
                 }
                 return false;
             } catch (e) {
@@ -307,13 +311,14 @@ document.addEventListener('alpine:init', () => {
             if (!this.newItem.name) return;
             const toAdd = {
                 name: this.newItem.name,
-                quantity: 1,
-                unit: '',
+                quantity: this.newItem.quantity || 1,
+                unit: this.newItem.default_unit || '',
                 category: this.newItem.category
             };
             if (await Alpine.store('grocery').addManual(toAdd)) {
                 this.showAdd = false;
                 alert("Produit créé !");
+                this.newItem = { name: '', category: 'Divers', default_unit: '' }; // Reset
             }
         }
     }));

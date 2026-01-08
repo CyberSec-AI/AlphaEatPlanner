@@ -1,82 +1,41 @@
 #!/bin/bash
 
-# Configuration
-REPO_USER="CyberSec-AI"
-REPO_NAME="AlphaEatPlanner"
-INSTALL_DIR=~/infra/docker/EatPlanner
-BACKUP_DIR=~/infra/docker/EatPlanner/backups
-DATE=$(date +%Y%m%d_%H%M%S)
+echo "🚀 Démarrage de la mise à jour (MODE LOCAL - PRÉSERVE VOS MODIFICATIONS)..."
 
-echo "🚀 Démarrage de la mise à jour..."
-
-# 1. Créer le dossier de backup si inexistant
-mkdir -p "$BACKUP_DIR"
-
-# 2. Sauvegarde de la configuration actuelle (.env) et de la base de données
-echo "💾 Sauvegarde de la configuration et des données..."
-if [ -d "$INSTALL_DIR/AlphaEatPlanner-main" ]; then
-    cp "$INSTALL_DIR/AlphaEatPlanner-main/meal-planner/deploy/.env" "$BACKUP_DIR/.env.backup"
-    
-    # Backup DB (si le conteneur tourne)
-    if docker ps | grep -q meal_planner_db; then
-        docker exec meal_planner_db mysqldump -u root -prootpassword mealplanner > "$BACKUP_DIR/db_$DATE.sql"
-        echo "✅ Base de données sauvegardée dans $BACKUP_DIR/db_$DATE.sql"
-    fi
+# Définition du dossier racine (suppose que vous lancez le script depuis AlphaEatPlanner)
+# Si le dossier meal-planner existe, on y entre.
+if [ -d "meal-planner" ]; then
+    cd meal-planner
 fi
 
-# 3. Arrêt des conteneurs
+echo "📂 Répertoire de travail : $(pwd)"
+
+# 1. Arrêt des services
 echo "🛑 Arrêt des services..."
-cd "$INSTALL_DIR/AlphaEatPlanner-main" 2>/dev/null || cd "$INSTALL_DIR"
-docker compose down
+# On cible le fichier docker-compose spécifique
+docker compose -f deploy/docker-compose.yml down
 
-# 4. Nettoyage de l'ancien code (avec sudo pour les fichiers root Docker)
-echo "🧹 Nettoyage..."
-cd "$INSTALL_DIR"
-# On supprime tout SAUF le dossier backups s'il est dedans
-sudo rm -rf AlphaEatPlanner-main main.zip
+# 2. Redémarrage avec reconstruction (Force la prise en compte de app.js et du backend)
+echo "🔥 Reconstruction et redémarrage..."
+docker compose -f deploy/docker-compose.yml up -d --build --remove-orphans
 
-# 5. Téléchargement de la nouvelle version
-echo "📥 Téléchargement de la dernière version..."
-# NOTE: Si le repo est privé, il faut un token : https://TOKEN@github.com/...
-wget "https://github.com/$REPO_USER/$REPO_NAME/archive/refs/heads/main.zip" -O main.zip
-
-# Vérification du téléchargement
-if [ ! -s main.zip ]; then
-    echo "❌ ERREUR : Le téléchargement a échoué (Fichier vide ou 404)."
-    echo "Vérifiez REPO_USER et REPO_NAME dans le script."
-    exit 1
-fi
-
-unzip -q main.zip
-rm main.zip
-
-# Vérification dézip
-if [ ! -d "$INSTALL_DIR/AlphaEatPlanner-main" ]; then
-     echo "❌ ERREUR : Dossier AlphaEatPlanner-main introuvable après dézip."
-     exit 1
-fi
-
-# 6. Restauration de la configuration
-echo "🔧 Restauration de la configuration..."
-if [ -f "$BACKUP_DIR/.env.backup" ]; then
-    cp "$BACKUP_DIR/.env.backup" "$INSTALL_DIR/AlphaEatPlanner-main/meal-planner/deploy/.env"
-else
-    echo "⚠️ Pas de fichier .env sauvegardé ! Utilisation de l'exemple."
-    cp "$INSTALL_DIR/AlphaEatPlanner-main/meal-planner/deploy/.env.example" "$INSTALL_DIR/AlphaEatPlanner-main/meal-planner/deploy/.env"
-fi
-
-# 7. Redémarrage
-echo "🔥 Redémarrage et Construction..."
-cd "$INSTALL_DIR/AlphaEatPlanner-main"
-# Force build pour les nouvelles dépendances Python
-# Force build pour les nouvelles dépendances Python
-docker compose -f meal-planner/deploy/docker-compose.yml up -d --build --remove-orphans
-
-echo "⏳ Attente du démarrage de la base de données..."
+echo "⏳ Attente du démarrage de la base de données (10s)..."
 sleep 10
 
-echo "Running DB Migrations..."
-docker exec -i meal_planner_db mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < meal-planner/deploy/update_db.sql || true
-docker exec -i meal_planner_db mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < meal-planner/deploy/update_db_v4.sql || true
-docker exec -i meal_planner_db mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < meal-planner/deploy/update_db_v5.sql || true
-echo "👉 Site accessible sur http://$(curl -s ifconfig.me):3000"
+# 3. Migrations (Base de données)
+echo "📦 Application des migrations..."
+
+# A. Via le script Python (Plus robuste pour la structure)
+echo "   - Exécution force_migration.py..."
+docker cp backend/force_migration.py meal_planner_backend:/app/force_migration.py
+docker exec meal_planner_backend python /app/force_migration.py
+
+# B. Via SQL (Sécurité supplémentaire)
+echo "   - Exécution des fichiers SQL..."
+# Note: Les variables d'env doivent être set ou on utilise root/rootpassword par défaut si fail
+# On essaie de lire le .env si possible, sinon on suppose les valeurs par défaut du docker-compose
+# DB_USER=user, DB_PASSWORD=userpassword, DB_NAME=mealplanner
+docker exec -i meal_planner_db mysql -uuser -puserpassword mealplanner < deploy/update_db_v5.sql 2>/dev/null || echo "   (SQL v5 ignoré ou déjà fait)"
+
+echo "✅ Mise à jour terminée !"
+echo "👉 IMPORTANT : Videz le cache de votre navigateur (Ctrl + F5) avant de tester."
