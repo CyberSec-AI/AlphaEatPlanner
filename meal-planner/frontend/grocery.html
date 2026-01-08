@@ -249,6 +249,11 @@
                         <span x-text="startDate"></span> <span class="mx-2 text-emerald-300">•</span> <span
                             x-text="endDate"></span>
                     </p>
+                    <div class="mt-4 bg-red-100 text-red-700 p-2 rounded text-xs font-mono border border-red-200"
+                        title="Debug Info">
+                        DEBUG: Items Count = <span x-text="items ? items.length : 'NULL'"></span><br>
+                        Loading: <span x-text="loading"></span>
+                    </div>
                 </div>
 
                 <div x-show="loading" class="text-center py-20 animate-pulse">
