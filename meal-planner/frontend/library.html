@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meal Planner - Bibliotheque</title>
+    <title>Mon Frigo - EatPlanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="app.js"></script>
@@ -115,6 +115,60 @@
             <p>Aucun article trouvé.</p>
         </div>
 
+    </div>
+    <!-- Add Item Modal -->
+    <div x-show="showAdd" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showAdd = false"></div>
+        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <span>✨</span> Nouveau Produit
+                </h3>
+                <button @click="showAdd = false" class="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nom du
+                        produit</label>
+                    <input type="text" x-model="newItem.name" placeholder="Ex: Pâtes, Riz..."
+                        class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-cyan-500 outline-none font-medium text-lg">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Rayon</label>
+                    <div class="flex flex-wrap gap-2">
+                        <template
+                            x-for="cat in ['Fruits & Légumes', 'Viandes & Poissons', 'Frais', 'Épicerie', 'Boissons', 'Hygiène', 'Maison', 'Divers']">
+                            <button @click="newItem.category = cat"
+                                :class="newItem.category === cat ? 'bg-cyan-500 text-white shadow-cyan-500/30 shadow-lg scale-105' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                class="px-3 py-1.5 rounded-lg text-sm font-bold transition-all transform duration-200"
+                                x-text="cat"></button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Qté
+                            (Defaut)</label>
+                        <input type="number" x-model="newItem.quantity"
+                            class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-center font-bold">
+                    </div>
+                    <div class="flex-1">
+                        <label
+                            class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Unité</label>
+                        <input type="text" x-model="newItem.default_unit" placeholder="kg, L..."
+                            class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3">
+                    </div>
+                </div>
+
+                <button @click="submitNewItem()"
+                    class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2">
+                    <span>💾</span> Créer le produit
+                </button>
+            </div>
+        </div>
     </div>
 </body>
 

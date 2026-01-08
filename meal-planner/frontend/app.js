@@ -369,9 +369,16 @@ document.addEventListener('alpine:init', () => {
             try {
                 const res = await fetch(`${API_URL}/grocery-list/checkout?start=${this.startDate}&end=${this.endDate}`, { method: 'POST' });
                 if (res.ok) {
+                    alert("Liste archivée avec succès !");
                     this.generateList();
+                } else {
+                    const err = await res.text();
+                    alert("Erreur serveur: " + err);
                 }
-            } catch (e) { alert("Erreur"); }
+            } catch (e) {
+                alert("Erreur technique: " + e.message);
+                console.error(e);
+            }
         },
 
         printList() { window.print(); }
