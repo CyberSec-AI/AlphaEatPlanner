@@ -10,8 +10,10 @@ router = APIRouter(prefix="/grocery-list", tags=["grocery-list"])
 
 @router.get("/", response_model=List[schemas.GroceryItem])
 def get_grocery_list(start: date, end: date, db: Session = Depends(get_db)):
-    # Get generated list from meal plan
-    generated = grocery.generate_grocery_list(db, start_date=start, end_date=end)
+    try:
+        # Get generated list from meal plan
+        generated = grocery.generate_grocery_list(db, start_date=start, end_date=end)
+
     
     # Get manual items
     manual = crud.get_manual_grocery_items(db)
@@ -30,7 +32,15 @@ def get_grocery_list(start: date, end: date, db: Session = Depends(get_db)):
     # For now, let's just append them to the list. 
     # Frontend can distinguish or we can merge if names match.
     # Simple append for now.
-    return generated + manual_list
+        # Combine 
+        return generated + manual_list
+    except Exception as e:
+        print(f"CRITICAL GROCERY ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        # Ensure detailed error is returned to frontend alert
+        raise HTTPException(status_code=500, detail=f"Grocery Error: {str(e)}")
+
 
 @router.post("/manual", response_model=schemas.GroceryManualItem)
 def create_manual_item(item: schemas.GroceryManualItemCreate, db: Session = Depends(get_db)):
