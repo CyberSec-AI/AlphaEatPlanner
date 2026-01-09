@@ -24,7 +24,5 @@ def create_meal_plan_item(item: schemas.MealPlanItemCreate, db: Session = Depend
 
 @router.delete("/{item_id}", response_model=schemas.MealPlanItem)
 def delete_meal_plan_item(item_id: int, db: Session = Depends(get_db)):
-    item = crud.delete_meal_plan_item(db, item_id=item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Meal plan item not found")
-    return item
+    crud.delete_meal_plan_item(db, item_id=item_id)
+    return {"status": "ok", "id": item_id}
