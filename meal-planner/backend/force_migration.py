@@ -29,7 +29,17 @@ def run_migrations():
         "ALTER TABLE grocery_manual_items ADD COLUMN category VARCHAR(50) DEFAULT 'Divers';",
         
         # V5: Is Shopped
-        "ALTER TABLE meal_plan_items ADD COLUMN is_shopped BOOLEAN DEFAULT FALSE;"
+        "ALTER TABLE meal_plan_items ADD COLUMN is_shopped BOOLEAN DEFAULT FALSE;",
+
+        # V12: Users & Authors
+        "ALTER TABLE users ADD COLUMN full_name VARCHAR(255) DEFAULT NULL;",
+        "ALTER TABLE users ADD COLUMN profile_picture_url VARCHAR(500) DEFAULT NULL;",
+        "ALTER TABLE recipes ADD COLUMN author_id INT DEFAULT NULL;",
+        "ALTER TABLE recipes ADD COLUMN image_url VARCHAR(500) DEFAULT NULL;",
+        
+        # V13: Mixed Diets (The likely cause of crash if missing)
+        "ALTER TABLE recipe_ingredients ADD COLUMN variant_mode VARCHAR(20) DEFAULT 'all';",
+        "ALTER TABLE meal_plan_items ADD COLUMN servings_vegetarian INT DEFAULT 0;"
     ]
 
     with engine.connect() as conn:
