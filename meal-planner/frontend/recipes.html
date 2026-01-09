@@ -109,6 +109,17 @@
                 <button @click="$store.i18n.toggle()"
                     class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-xs font-black text-slate-600 ml-2"
                     x-text="$store.i18n.lang">FR</button>
+
+                <!-- Logout -->
+                <button @click="$store.auth.logout()"
+                    class="text-slate-400 hover:text-rose-500 transition p-1 hover:bg-rose-50 rounded-full ml-2"
+                    title="Se déconnecter">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                        </path>
+                    </svg>
+                </button>
             </div>
 
             <!-- Mobile Header Controls -->
