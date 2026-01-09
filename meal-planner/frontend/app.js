@@ -683,7 +683,7 @@ document.addEventListener('alpine:init', () => {
                 this.items = await res.json();
             } catch (e) {
                 console.error(e);
-                alert(Alpine.store('i18n').t('error_api'));
+                alert("Erreur Technique: " + e.message);
             } finally {
                 this.loading = false;
             }
