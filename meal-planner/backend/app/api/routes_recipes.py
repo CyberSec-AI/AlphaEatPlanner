@@ -15,14 +15,7 @@ from .. import crud, schemas, models, deps
 
 @router.post("/", response_model=schemas.Recipe)
 def create_recipe(recipe: schemas.RecipeCreate, db: Session = Depends(get_db), current_user: models.User = Depends(deps.get_current_user)):
-    try:
-        print(f"DEBUG: Creating recipe {recipe.title}, Author: {current_user.id}")
-        return crud.create_recipe(db=db, recipe=recipe, author_id=current_user.id)
-    except Exception as e:
-        print(f"CRITICAL ERROR creating recipe: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+    return crud.create_recipe(db=db, recipe=recipe, author_id=current_user.id)
 
 @router.get("/{recipe_id}", response_model=schemas.Recipe)
 def read_recipe(recipe_id: int, db: Session = Depends(get_db)):
