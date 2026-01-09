@@ -6,8 +6,14 @@ from .api import routes_recipes, routes_meal_plan, routes_upload, routes_auth
 from . import models, auth_utils
 from .db import SessionLocal, engine
 
-# Create tables
-models.Base.metadata.create_all(bind=engine)
+# Create tables SAFE MODE
+# If DB is down, printed error but let app start so user sees 500 not 502
+try:
+    print("🔄 Initializing Database Tables...")
+    models.Base.metadata.create_all(bind=engine)
+    print("✅ Tables Created.")
+except Exception as e:
+    print(f"❌ FATAL DB INIT ERROR: {e}")
 
 app = FastAPI(
     title="Meal Planner API",
@@ -19,18 +25,19 @@ app = FastAPI(
 os.makedirs("/app/static/images", exist_ok=True)
 app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 
-# Create Default Admin
+# Create Default Admin SAFE MODE
 def create_default_admin():
-    db = SessionLocal()
     try:
+        db = SessionLocal()
         if not db.query(models.User).filter(models.User.username == "admin").first():
             print("Creating default admin user...")
             hashed = auth_utils.get_password_hash("admin")
             admin = models.User(username="admin", hashed_password=hashed)
             db.add(admin)
             db.commit()
-    finally:
         db.close()
+    except Exception as e:
+        print(f"⚠️ Could not create admin (DB likely down): {e}")
 
 create_default_admin()
 
@@ -50,10 +57,20 @@ app.add_middleware(
 
 app.include_router(routes_recipes.router)
 app.include_router(routes_meal_plan.router)
-# app.include_router(routes_grocery.router) # TEMPORARILY DISABLED
+# Re-enabling Grocery since we fixed the module
+try:
+    from .api import routes_grocery
+    app.include_router(routes_grocery.router)
+except Exception as e:
+    print(f"❌ Could not load Grocery Routes: {e}")
+
 app.include_router(routes_upload.router)
 app.include_router(routes_auth.router)
 
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/")
+def root():
+    return {"message": "Meal Planner API is running", "db_status": "Check logs"}
