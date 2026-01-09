@@ -44,6 +44,25 @@
         .animation-delay-2000 {
             animation-delay: 2s;
         }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #10b981;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #059669;
+        }
     </style>
 </head>
 
@@ -192,20 +211,24 @@
                         <p class="text-sm text-slate-500 mb-6 line-clamp-3 leading-relaxed flex-grow"
                             x-text="recipe.description"></p>
 
-                        <!-- Recipe Steps Preview -->
+                        <!-- Recipe Steps Preview (Scrollable) -->
                         <div x-show="recipe.steps && recipe.steps.length > 0" class="mb-4">
-                            <h4 class="text-xs font-bold text-slate-700 uppercase mb-2">Instructions</h4>
-                            <div class="space-y-2">
-                                <template x-for="step in recipe.steps.slice(0, 3)" :key="step.id || step.step_order">
+                            <h4
+                                class="text-xs font-bold text-slate-700 uppercase mb-2 flex justify-between items-center">
+                                Instructions
+                                <span
+                                    class="text-[10px] text-emerald-500 font-normal normal-case bg-emerald-50 px-2 py-0.5 rounded-full">Scroll
+                                    ↕</span>
+                            </h4>
+                            <div
+                                class="space-y-3 overflow-y-auto max-h-32 pr-2 custom-scrollbar hover:max-h-60 transition-all duration-500 relative z-10 bg-white">
+                                <template x-for="step in recipe.steps" :key="step.id || step.step_order">
                                     <div class="flex gap-2 items-start text-xs text-slate-600">
                                         <span class="font-bold text-emerald-600 flex-shrink-0"
                                             x-text="(step.step_order || $el.rowIndex + 1) + '.'"></span>
-                                        <span class="line-clamp-2" x-text="step.instruction"></span>
+                                        <span class="leading-relaxed" x-text="step.instruction"></span>
                                     </div>
                                 </template>
-                                <div x-show="recipe.steps.length > 3" class="text-xs text-emerald-600 font-medium pt-1">
-                                    + <span x-text="recipe.steps.length - 3"></span> more steps...
-                                </div>
                             </div>
                         </div>
 
