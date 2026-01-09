@@ -98,6 +98,20 @@ def fix_database():
                     print("🛠️ Ajout 'is_shopped'...")
                     connection.execute(text("ALTER TABLE meal_plan_items ADD COLUMN is_shopped BOOLEAN DEFAULT FALSE;"))
 
+            # 5. GROCERY MANUAL ITEMS: Category
+            if 'grocery_manual_items' in tables:
+                cols = [c['name'] for c in inspector.get_columns('grocery_manual_items')]
+                print(f"🛒 Colonnes Manual: {cols}")
+                if 'category' not in cols:
+                    print("🛠️ Ajout 'category'...")
+                    connection.execute(text("ALTER TABLE grocery_manual_items ADD COLUMN category VARCHAR(50) DEFAULT 'Divers';"))
+            
+            # 6. Check for grocery_library (Just logging)
+            if 'grocery_library' not in tables:
+                print("⚠️ Table grocery_library manquante ! (Devrait être créée par SQLAlchemy)")
+                # We could force create it but SQLAlchemy create_all usually handles this on startup if models exist.
+
+
     except Exception as e:
         print(f"💥 Erreur inattendue pendant la réparation: {e}")
     finally:
