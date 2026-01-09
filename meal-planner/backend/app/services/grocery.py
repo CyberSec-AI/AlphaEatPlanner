@@ -27,9 +27,10 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
         print(f"DEBUG: Recipe '{recipe.title}' - Standard: {item.servings}, Veg: {item.servings_vegetarian}")
 
         # Ratios
-        std_servings = Decimal(item.servings)
-        veg_servings = Decimal(item.servings_vegetarian)
-        base_servings = Decimal(recipe.default_servings)
+        # Ratios
+        std_servings = Decimal(item.servings or 0)
+        veg_servings = Decimal(item.servings_vegetarian or 0)
+        base_servings = Decimal(recipe.default_servings or 1)
 
         # Ratio for ingredients tagged as 'all' or 'standard' using standard servings
         # Actually 'all' uses std + veg
@@ -49,6 +50,7 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
             
             # Determine which ratio to use
             mode = getattr(ing, 'variant_mode', 'all')
+            if not mode: mode = 'all'
             
             qty_needed = Decimal(0)
             
