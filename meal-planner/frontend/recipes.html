@@ -318,44 +318,95 @@
                             class="bg-slate-100 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
                         <span x-text="$store.i18n.t('ingredients')">Ingredients</span>
                     </h3>
-                    <div class="flex gap-2 mb-4">
-                        <input type="text" x-model="newIng.name" placeholder="Item name"
-                            class="flex-1 border bg-slate-50 border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-                        <input type="number" x-model="newIng.quantity" placeholder="Qty"
-                            class="w-20 border bg-slate-50 border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-                        <input type="text" x-model="newIng.unit" placeholder="Unit"
-                            class="w-20 border bg-slate-50 border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-                        <select x-model="newIng.variant_mode"
-                            class="w-32 border bg-slate-50 border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-                            <option value="all">Tous</option>
-                            <option value="standard">Standard</option>
-                            <option value="vegetarian">Végétarien</option>
-                        </select>
-                        <button @click="addIngredient()"
-                            class="bg-slate-800 hover:bg-slate-900 text-white w-12 rounded-xl flex items-center justify-center transition shadow-lg shadow-slate-200">+</button>
+                    <div x-data="{ activeTab: 'all' }"
+                        class="border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                        <!-- Tabs Header -->
+                        <div class="flex border-b border-slate-100 bg-slate-50">
+                            <button @click="activeTab = 'all'"
+                                :class="activeTab === 'all' ? 'bg-white text-emerald-700 shadow-sm font-bold border-b-2 border-emerald-500' : 'text-slate-500 hover:text-emerald-600'"
+                                class="flex-1 py-3 text-sm transition-all duration-200 flex items-center justify-center gap-2">
+                                <span class="text-lg">🥣</span> Base
+                            </button>
+                            <button @click="activeTab = 'standard'"
+                                :class="activeTab === 'standard' ? 'bg-white text-emerald-700 shadow-sm font-bold border-b-2 border-emerald-500' : 'text-slate-500 hover:text-emerald-600'"
+                                class="flex-1 py-3 text-sm transition-all duration-200 flex items-center justify-center gap-2">
+                                <span class="text-lg">🍖</span> Standard
+                            </button>
+                            <button @click="activeTab = 'vegetarian'"
+                                :class="activeTab === 'vegetarian' ? 'bg-white text-emerald-700 shadow-sm font-bold border-b-2 border-emerald-500' : 'text-slate-500 hover:text-emerald-600'"
+                                class="flex-1 py-3 text-sm transition-all duration-200 flex items-center justify-center gap-2">
+                                <span class="text-lg">🌿</span> Végé
+                            </button>
+                        </div>
+
+                        <!-- Tab Content -->
+                        <div class="p-4 bg-slate-50/50">
+                            <!-- Input Row (Contextual to Tab) -->
+                            <div class="flex gap-2 mb-4">
+                                <input type="text" x-model="newIng.name"
+                                    :placeholder="activeTab === 'all' ? 'Ingrédient de base...' : (activeTab === 'standard' ? 'Viande/Poisson...' : 'Substitut Végé...')"
+                                    class="flex-1 border bg-white border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
+                                    @keyup.enter="
+                                        newIng.variant_mode = activeTab; 
+                                        addIngredient();
+                                    ">
+                                <input type="number" x-model="newIng.quantity" placeholder="Qté"
+                                    class="w-20 border bg-white border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
+                                    @keyup.enter="
+                                        newIng.variant_mode = activeTab; 
+                                        addIngredient();
+                                    ">
+                                <input type="text" x-model="newIng.unit" placeholder="Unité"
+                                    class="w-20 border bg-white border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
+                                    @keyup.enter="
+                                        newIng.variant_mode = activeTab; 
+                                        addIngredient();
+                                    ">
+
+                                <button @click="
+                                        newIng.variant_mode = activeTab; 
+                                        addIngredient();
+                                    "
+                                    class="bg-slate-800 hover:bg-slate-900 text-white w-12 rounded-xl flex items-center justify-center transition shadow-lg shadow-slate-200 transform active:scale-95">+</button>
+                            </div>
+
+                            <!-- List (Filtered by Tab) -->
+                            <ul class="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar min-h-[100px]">
+                                <template x-for="(ing, idx) in newRecipe.ingredients" :key="idx">
+                                    <li x-show="(ing.variant_mode || 'all') === activeTab"
+                                        class="flex justify-between items-center text-sm bg-white p-3 rounded-xl border border-slate-100 shadow-sm group hover:border-emerald-200 transition">
+
+                                        <div class="flex items-center gap-3">
+                                            <span
+                                                class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-lg shadow-inner">
+                                                <span x-show="ing.variant_mode === 'standard'">🍖</span>
+                                                <span x-show="ing.variant_mode === 'vegetarian'">🌿</span>
+                                                <span x-show="!ing.variant_mode || ing.variant_mode === 'all'">🥣</span>
+                                            </span>
+                                            <div class="flex flex-col">
+                                                <span class="font-bold text-slate-800" x-text="ing.name"></span>
+                                                <span class="text-xs text-slate-500 font-mono">
+                                                    <span x-text="ing.quantity"></span> <span x-text="ing.unit"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <button @click="removeIngredient(idx)"
+                                            class="text-slate-300 hover:text-rose-500 p-2 rounded-full hover:bg-rose-50 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </li>
+                                </template>
+                                <div x-show="newRecipe.ingredients.filter(i => (i.variant_mode || 'all') === activeTab).length === 0"
+                                    class="text-center text-slate-400 text-sm py-4 italic">
+                                    Aucun ingrédient dans cette catégorie.
+                                </div>
+                            </ul>
+                        </div>
                     </div>
-                    <ul class="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
-                        <template x-for="(ing, idx) in newRecipe.ingredients" :key="idx">
-                            <li
-                                class="flex justify-between items-center text-sm bg-slate-50 p-2.5 rounded-lg border border-slate-100 group">
-                                <span class="flex items-center gap-2 text-slate-700">
-                                    <span class="text-sm" x-show="ing.variant_mode === 'standard'">🍖</span>
-                                    <span class="text-sm" x-show="ing.variant_mode === 'vegetarian'">🌿</span>
-                                    <span class="text-sm"
-                                        x-show="!ing.variant_mode || ing.variant_mode === 'all'">♾️</span>
-                                    <span class="font-bold text-emerald-700"
-                                        x-text="ing.quantity + '' + ing.unit"></span> <span x-text="ing.name"></span>
-                                </span>
-                                <button @click="removeIngredient(idx)"
-                                    class="text-slate-300 hover:text-rose-500 p-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </li>
-                        </template>
-                    </ul>
                 </div>
             </div>
 
