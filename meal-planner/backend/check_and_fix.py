@@ -77,6 +77,27 @@ def fix_database():
                      print("🛠️ Ajout 'image_url'...")
                      connection.execute(text("ALTER TABLE recipes ADD COLUMN image_url VARCHAR(500) DEFAULT NULL;"))
 
+            # 3. RECIPE INGREDIENTS: Variant Mode
+            if 'recipe_ingredients' in tables:
+                cols = [c['name'] for c in inspector.get_columns('recipe_ingredients')]
+                print(f"🥦 Colonnes Ingredients: {cols}")
+                if 'variant_mode' not in cols:
+                    print("🛠️ Ajout 'variant_mode' (all/standard/vegetarian)...")
+                    connection.execute(text("ALTER TABLE recipe_ingredients ADD COLUMN variant_mode VARCHAR(20) DEFAULT 'all';"))
+
+            # 4. MEAL PLAN ITEMS: Vegetarian Servings
+            if 'meal_plan_items' in tables:
+                cols = [c['name'] for c in inspector.get_columns('meal_plan_items')]
+                print(f"📅 Colonnes MealPlan: {cols}")
+                if 'servings_vegetarian' not in cols:
+                    print("🛠️ Ajout 'servings_vegetarian'...")
+                    connection.execute(text("ALTER TABLE meal_plan_items ADD COLUMN servings_vegetarian INT DEFAULT 0;"))
+                
+                # Ensure is_shopped exists (from V9)
+                if 'is_shopped' not in cols:
+                    print("🛠️ Ajout 'is_shopped'...")
+                    connection.execute(text("ALTER TABLE meal_plan_items ADD COLUMN is_shopped BOOLEAN DEFAULT FALSE;"))
+
     except Exception as e:
         print(f"💥 Erreur inattendue pendant la réparation: {e}")
     finally:

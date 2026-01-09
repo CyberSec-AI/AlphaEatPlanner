@@ -192,9 +192,12 @@ document.addEventListener('alpine:init', () => {
     });
 
     Alpine.store('i18n', {
-        lang: 'fr', // Force FR default
+        lang: localStorage.getItem('app_lang') || 'fr',
         t(key) { return TRANSLATIONS[this.lang][key] || key; },
-        toggle() { this.lang = this.lang === 'en' ? 'fr' : 'en'; }
+        toggle() {
+            this.lang = this.lang === 'en' ? 'fr' : 'en';
+            localStorage.setItem('app_lang', this.lang);
+        }
     });
 
     // ... [Original Recipes, Planner, Grocery stores...]
@@ -763,6 +766,8 @@ document.addEventListener('alpine:init', () => {
             this.newItem = {
                 recipe_id: '',
                 servings: 2,
+                servings_vegetarian: 0,
+                is_mixed: false,
                 meal_type: mealType || 'dinner',
                 with_leftovers: false
             };
@@ -786,10 +791,15 @@ document.addEventListener('alpine:init', () => {
 
         async submitItem() {
             if (!this.newItem.recipe_id) return;
+
+            // If mixed mode is off, zero out vegetarian servings just in case
+            if (!this.newItem.is_mixed) this.newItem.servings_vegetarian = 0;
+
             const payload = {
                 date: this.selectedDate,
                 recipe_id: parseInt(this.newItem.recipe_id),
                 servings: parseInt(this.newItem.servings),
+                servings_vegetarian: parseInt(this.newItem.servings_vegetarian),
                 meal_type: this.newItem.meal_type
             };
 
@@ -809,7 +819,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('recipesPage', () => ({
         showModal: false,
         newRecipe: { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] },
-        newIng: { name: '', quantity: 1, unit: '' },
+        newIng: { name: '', quantity: 1, unit: '', variant_mode: 'all' },
         editMode: false,
         editingId: null,
 
@@ -819,6 +829,7 @@ document.addEventListener('alpine:init', () => {
 
         openAddModal() {
             this.newRecipe = { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] };
+            this.newIng = { name: '', quantity: 1, unit: '', variant_mode: 'all' };
             this.editMode = false;
             this.editingId = null;
             this.showModal = true;
@@ -827,6 +838,7 @@ document.addEventListener('alpine:init', () => {
         openEditModal(recipe) {
             // Deep copy to avoid mutating store directly
             this.newRecipe = JSON.parse(JSON.stringify(recipe));
+            this.newIng = { name: '', quantity: 1, unit: '', variant_mode: 'all' }; // Reset newIng
             this.editMode = true;
             this.editingId = recipe.id;
             this.showModal = true;
@@ -835,7 +847,7 @@ document.addEventListener('alpine:init', () => {
         addIngredient() {
             if (this.newIng.name) {
                 this.newRecipe.ingredients.push({ ...this.newIng });
-                this.newIng = { name: '', quantity: 1, unit: '' };
+                this.newIng = { name: '', quantity: 1, unit: '', variant_mode: 'all' };
             }
         },
 

@@ -43,7 +43,7 @@ class User(Base):
     full_name = Column(String(255), nullable=True)
     profile_picture_url = Column(String(500), nullable=True)
     
-    recipes = relationship("Recipe", back_populates="author")
+    recipe = relationship("Recipe", back_populates="author")
 
 class RecipeIngredient(Base):
     __tablename__ = "recipe_ingredients"
@@ -53,6 +53,7 @@ class RecipeIngredient(Base):
     name = Column(String(255), index=True)
     quantity = Column(Numeric(10, 2))
     unit = Column(String(50))
+    variant_mode = Column(String(20), default='all') # 'all', 'standard', 'vegetarian'
 
     recipe = relationship("Recipe", back_populates="ingredients")
 
@@ -64,6 +65,7 @@ class MealPlanItem(Base):
     date = Column(Date, index=True)
     recipe_id = Column(Integer, ForeignKey("recipes.id"))
     servings = Column(Integer)
+    servings_vegetarian = Column(Integer, default=0)
     meal_type = Column(String(20), default="dinner") # 'breakfast', 'lunch', 'dinner'
     is_shopped = Column(Boolean, default=False)
 

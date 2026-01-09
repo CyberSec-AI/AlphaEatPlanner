@@ -17,37 +17,53 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
     print(f"DEBUG: Found {len(meal_items)} meal items in range.")
     
     # Aggregate
-    # Key: (normalized_name, normalized_unit)
-    agg: Dict[Tuple[str, str], float] = {}
+    agg: Dict[Tuple[str, str], Decimal] = {}
     
     for item in meal_items:
         recipe = item.recipe
-        if not recipe:
-            print(f"DEBUG: Item {item.id} has no recipe!")
+        if not recipe or not recipe.default_servings:
             continue
             
-        print(f"DEBUG: Processing Recipe '{recipe.title}' (Default: {recipe.default_servings}, Plan: {item.servings})")
-        ratio = Decimal(item.servings) / Decimal(recipe.default_servings) if recipe.default_servings else 1
-        print(f"DEBUG: Ratio = {ratio}")
+        print(f"DEBUG: Recipe '{recipe.title}' - Standard: {item.servings}, Veg: {item.servings_vegetarian}")
+
+        # Ratios
+        std_servings = Decimal(item.servings)
+        veg_servings = Decimal(item.servings_vegetarian)
+        base_servings = Decimal(recipe.default_servings)
+
+        # Ratio for ingredients tagged as 'all' or 'standard' using standard servings
+        # Actually 'all' uses std + veg
         
-        if not recipe.ingredients:
-            print(f"DEBUG: Recipe '{recipe.title}' has 0 ingredients.")
+        total_servings = std_servings + veg_servings
+        
+        ratio_all = total_servings / base_servings
+        ratio_std = std_servings / base_servings
+        ratio_veg = veg_servings / base_servings
 
         for ing in recipe.ingredients:
             # Normalize
             norm_name = ing.name.strip().lower()
-            norm_name = " ".join(norm_name.split()) # Remove double spaces
-            
+            norm_name = " ".join(norm_name.split()) 
             norm_unit = ing.unit.strip().lower() if ing.unit else ""
-            
             key = (norm_name, norm_unit)
             
-            quantity = (Decimal(ing.quantity) * ratio)
+            # Determine which ratio to use
+            mode = getattr(ing, 'variant_mode', 'all')
             
-            if key in agg:
-                agg[key] += quantity
-            else:
-                agg[key] = quantity
+            qty_needed = Decimal(0)
+            
+            if mode == 'all':
+                qty_needed = Decimal(ing.quantity) * ratio_all
+            elif mode == 'standard':
+                qty_needed = Decimal(ing.quantity) * ratio_std
+            elif mode == 'vegetarian':
+                qty_needed = Decimal(ing.quantity) * ratio_veg
+                
+            if qty_needed > 0:
+                if key in agg:
+                    agg[key] += qty_needed
+                else:
+                    agg[key] = qty_needed
                 
     result = []
     for (name, unit), qty in agg.items():

@@ -8,6 +8,7 @@ class IngredientBase(BaseModel):
     name: str
     quantity: Decimal
     unit: str
+    variant_mode: str = "all" # all, standard, vegetarian
 
 class IngredientCreate(IngredientBase):
     pass
@@ -68,6 +69,7 @@ class MealPlanItemBase(BaseModel):
     date: date
     recipe_id: Optional[int] = None
     servings: int
+    servings_vegetarian: int = 0
     meal_type: str = "dinner"
 
 class MealPlanItemCreate(MealPlanItemBase):

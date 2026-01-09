@@ -7,7 +7,7 @@
     <title>Mon Planning - EatPlanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="app.js?v=14"></script>
+    <script src="app.js?v=15"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
@@ -213,11 +213,29 @@
                 </select>
             </div>
 
-            <div class="mb-5">
-                <label class="block text-sm font-bold mb-2 text-slate-700"
-                    x-text="$store.i18n.t('servings')">Servings</label>
-                <input type="number" x-model="newItem.servings"
-                    class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-slate-800">
+            <div class="mb-5 border-t border-slate-100 pt-5">
+                <label class="flex items-center gap-2 mb-3 cursor-pointer">
+                    <input type="checkbox" x-model="newItem.is_mixed" class="w-4 h-4 text-emerald-600 rounded">
+                    <span class="text-sm font-bold text-slate-600">Repas Mixte (Variantes) ?</span>
+                </label>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold mb-1 text-slate-500">
+                            Standard <span x-show="newItem.is_mixed">(🍖)</span>
+                        </label>
+                        <input type="number" x-model="newItem.servings"
+                            class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-slate-800">
+                    </div>
+
+                    <div x-show="newItem.is_mixed" x-transition.opacity>
+                        <label class="block text-xs font-bold mb-1 text-emerald-600">
+                            Végétarien (🌿)
+                        </label>
+                        <input type="number" x-model="newItem.servings_vegetarian"
+                            class="w-full border border-emerald-200 bg-emerald-50/50 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-emerald-800">
+                    </div>
+                </div>
             </div>
 
             <!-- Leftovers Option (Only if Dinner) -->

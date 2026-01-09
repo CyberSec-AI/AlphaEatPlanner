@@ -31,7 +31,8 @@ def create_recipe(db: Session, recipe: schemas.RecipeCreate, author_id: Optional
             recipe_id=db_recipe.id,
             name=ingredient.name,
             quantity=ingredient.quantity,
-            unit=ingredient.unit
+            unit=ingredient.unit,
+            variant_mode=ingredient.variant_mode
         )
         db.add(db_ingredient)
     
@@ -63,7 +64,8 @@ def update_recipe(db: Session, recipe_id: int, recipe_update: schemas.RecipeUpda
                 recipe_id=recipe_id,
                 name=ingredient.name,
                 quantity=ingredient.quantity,
-                unit=ingredient.unit
+                unit=ingredient.unit,
+                variant_mode=ingredient.variant_mode
             )
             db.add(db_ing)
             
@@ -91,6 +93,7 @@ def create_meal_plan_item(db: Session, item: schemas.MealPlanItemCreate):
         date=item.date,
         recipe_id=item.recipe_id,
         servings=item.servings,
+        servings_vegetarian=item.servings_vegetarian,
         meal_type=item.meal_type
     )
     db.add(db_item)
