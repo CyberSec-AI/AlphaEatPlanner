@@ -13,34 +13,27 @@ def get_grocery_list(start: date, end: date, db: Session = Depends(get_db)):
     try:
         # Get generated list from meal plan
         generated = grocery.generate_grocery_list(db, start_date=start, end_date=end)
-
-    
-    # Get manual items
-    manual = crud.get_manual_grocery_items(db)
-    
-    # Convert manual items to GroceryItem schema
-    manual_list = []
-    for m in manual:
-        manual_list.append(schemas.GroceryItem(
-            name=m.name,
-            quantity=m.quantity,
-            unit=m.unit if m.unit else "",
-            original_ingredients=["Manual Item", m.category] # Using list to pass category hackily or update schema
-        ))
-    
-    # Combine or just append? 
-    # For now, let's just append them to the list. 
-    # Frontend can distinguish or we can merge if names match.
-    # Simple append for now.
+        
+        # Get manual items
+        manual = crud.get_manual_grocery_items(db)
+        
+        # Convert manual items to GroceryItem schema
+        manual_list = []
+        for m in manual:
+            manual_list.append(schemas.GroceryItem(
+                name=m.name,
+                quantity=m.quantity,
+                unit=m.unit if m.unit else "",
+                original_ingredients=["Manual Item", m.category]
+            ))
+        
         # Combine 
         return generated + manual_list
     except Exception as e:
         print(f"CRITICAL GROCERY ERROR: {e}")
         import traceback
         traceback.print_exc()
-        # Ensure detailed error is returned to frontend alert
         raise HTTPException(status_code=500, detail=f"Grocery Error: {str(e)}")
-
 
 @router.post("/manual", response_model=schemas.GroceryManualItem)
 def create_manual_item(item: schemas.GroceryManualItemCreate, db: Session = Depends(get_db)):
@@ -72,8 +65,7 @@ def create_manual_item(item: schemas.GroceryManualItemCreate, db: Session = Depe
     except Exception as e:
         db.rollback()
         print(f"ERROR Create Manual: {e}")
-        # Re-raise or return 500? FastAPI handles re-raise better usually, but returns 500.
-        raise e
+        raise HTTPException(status_code=500, detail=f"Manual Item Error: {str(e)}")
 
 @router.delete("/manual/{item_id}")
 def delete_manual_item(item_id: int, db: Session = Depends(get_db)):
