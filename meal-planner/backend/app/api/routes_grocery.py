@@ -43,7 +43,7 @@ def create_manual_item(item: schemas.GroceryManualItemCreate, db: Session = Depe
         # Update category if user changed it? Let's assume most recent category is preferred.
         existing_lib.category = item.category
         if item.unit:
-                existing_lib.default_unit = item.unit
+            existing_lib.default_unit = item.unit
     else:
         new_lib = models.GroceryLibraryItem(
             name=item.name,
