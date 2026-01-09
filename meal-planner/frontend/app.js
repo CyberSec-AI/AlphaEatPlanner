@@ -164,14 +164,14 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify(userData)
                 });
                 if (res.ok) {
-                    alert("Utilisateur créé avec succès !");
+                    Alpine.store('ui').notify("Utilisateur créé avec succès !");
                     return true;
                 } else {
                     const err = await res.json();
-                    alert("Erreur: " + (err.detail || "Impossible de créer l'utilisateur"));
+                    Alpine.store('ui').notify("Erreur: " + (err.detail || "Impossible de créer l'utilisateur"), 'error');
                 }
             } catch (e) {
-                alert("Erreur technique: " + e.message);
+                Alpine.store('ui').notify("Erreur technique: " + e.message, 'error');
             }
             return false;
         },
@@ -184,7 +184,7 @@ document.addEventListener('alpine:init', () => {
                 });
                 if (res.ok) {
                     this.user = await res.json();
-                    alert("Profil mis à jour !");
+                    Alpine.store('ui').notify("Profil mis à jour !");
                     return true;
                 }
             } catch (e) { }
@@ -212,6 +212,85 @@ document.addEventListener('alpine:init', () => {
         toggle() {
             this.lang = this.lang === 'en' ? 'fr' : 'en';
             localStorage.setItem('app_lang', this.lang);
+        }
+    });
+
+    // --- CUSTOM UI COMPONENTS (Toast & Modal) ---
+    Alpine.store('ui', {
+        notifications: [],
+        confirmCallback: null,
+        confirmState: { open: false, title: '', message: '' },
+
+        init() {
+            // Inject UI HTML into Body if not exists
+            if (!document.getElementById('ui-components-container')) {
+                const html = `
+                <div id="ui-components-container">
+                    <!-- Toast Container -->
+                    <div class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+                        <template x-for="notif in $store.ui.notifications" :key="notif.id">
+                            <div x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 translate-x-8"
+                                x-transition:enter-end="opacity-100 translate-x-0"
+                                x-transition:leave="transition ease-in duration-200"
+                                x-transition:leave-start="opacity-100 translate-x-0"
+                                x-transition:leave-end="opacity-0 translate-x-8"
+                                class="pointer-events-auto bg-white rounded-xl shadow-lg border-l-4 p-4 min-w-[300px] flex items-start gap-3"
+                                :class="notif.type === 'error' ? 'border-rose-500' : 'border-emerald-500'">
+                                <div class="text-xl" x-text="notif.type === 'error' ? '🚨' : '✅'"></div>
+                                <div>
+                                    <h4 class="font-bold text-sm" :class="notif.type === 'error' ? 'text-rose-700' : 'text-emerald-700'"
+                                        x-text="notif.type === 'error' ? 'Erreur' : 'Succès'"></h4>
+                                    <p class="text-xs text-slate-600 font-medium" x-text="notif.message"></p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Confirm Modal -->
+                    <div x-show="$store.ui.confirmState.open" style="display: none" 
+                        class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                        <div x-transition.opacity class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+                        <div x-show="$store.ui.confirmState.open" x-transition.scale
+                            class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-2" x-text="$store.ui.confirmState.title">Confirmation</h3>
+                            <p class="text-slate-500 text-sm mb-6" x-text="$store.ui.confirmState.message"></p>
+                            <div class="flex justify-end gap-3">
+                                <button @click="$store.ui.resolveConfirm(false)" 
+                                    class="px-4 py-2 text-slate-500 hover:text-slate-800 font-bold transition">
+                                    Annuler
+                                </button>
+                                <button @click="$store.ui.resolveConfirm(true)"
+                                    class="bg-rose-500 hover:bg-rose-600 text-white px-5 py-2 rounded-xl font-bold shadow-lg shadow-rose-200 transition transform active:scale-95">
+                                    Confirmer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+                document.body.insertAdjacentHTML('beforeend', html);
+            }
+        },
+
+        notify(message, type = 'success') {
+            const id = Date.now();
+            this.notifications.push({ id, message, type });
+            setTimeout(() => {
+                this.notifications = this.notifications.filter(n => n.id !== id);
+            }, 5000);
+        },
+
+        confirm(message, title = 'Confirmation') {
+            return new Promise((resolve) => {
+                this.confirmState = { open: true, title, message };
+                this.confirmCallback = resolve;
+            });
+        },
+
+        resolveConfirm(result) {
+            this.confirmState.open = false;
+            if (this.confirmCallback) this.confirmCallback(result);
+            this.confirmCallback = null;
         }
     });
 
@@ -244,7 +323,7 @@ document.addEventListener('alpine:init', () => {
                 });
                 if (res.ok) { this.fetch(); return true; }
             } catch (e) {
-                alert(Alpine.store('i18n').t('error_api'));
+                Alpine.store('ui').notify(Alpine.store('i18n').t('error_api'), 'error');
                 return false;
             }
             return false;
@@ -258,18 +337,18 @@ document.addEventListener('alpine:init', () => {
                 });
                 if (res.ok) { this.fetch(); return true; }
             } catch (e) {
-                alert(Alpine.store('i18n').t('error_api'));
+                Alpine.store('ui').notify(Alpine.store('i18n').t('error_api'), 'error');
                 return false;
             }
             return false;
         },
         async delete(id) {
-            if (!confirm(Alpine.store('i18n').t('delete_confirm'))) return;
+            if (!await Alpine.store('ui').confirm(Alpine.store('i18n').t('delete_confirm'))) return;
             try {
                 const res = await fetch(`${API_URL}/recipes/${id}`, { method: 'DELETE' });
                 if (res.ok) this.fetch();
             } catch (e) {
-                alert(Alpine.store('i18n').t('error_api'));
+                Alpine.store('ui').notify(Alpine.store('i18n').t('error_api'), 'error');
             }
         },
         async updateRating(id, rating) {
@@ -305,7 +384,7 @@ document.addEventListener('alpine:init', () => {
                 }
             } catch (e) {
                 console.error(e);
-                alert("Upload Failed");
+                Alpine.store('ui').notify("Upload Failed", 'error');
             }
             return null;
         }
@@ -378,18 +457,18 @@ document.addEventListener('alpine:init', () => {
 
                 return true;
             } catch (e) {
-                alert(Alpine.store('i18n').t('error_api'));
+                Alpine.store('ui').notify(Alpine.store('i18n').t('error_api'), 'error');
                 return false;
             }
         },
         async remove(id) {
-            if (!confirm(Alpine.store('i18n').t('delete_confirm'))) return false;
+            if (!await Alpine.store('ui').confirm(Alpine.store('i18n').t('delete_confirm'))) return false;
             try {
                 const res = await fetch(`${API_URL}/meal-plan/${id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Failed');
                 return true;
             } catch (e) {
-                alert(Alpine.store('i18n').t('error_api'));
+                Alpine.store('ui').notify(Alpine.store('i18n').t('error_api'), 'error');
                 return false;
             }
         }
@@ -431,11 +510,11 @@ document.addEventListener('alpine:init', () => {
                 } else {
                     // Alert backend error
                     const err = await res.json().catch(() => ({ detail: res.statusText }));
-                    alert("Erreur: " + (err.detail || "Erreur inconnue"));
+                    Alpine.store('ui').notify("Erreur: " + (err.detail || "Erreur inconnue"), 'error');
                 }
                 return false;
             } catch (e) {
-                alert(Alpine.store('i18n').t('error_api'));
+                Alpine.store('ui').notify(Alpine.store('i18n').t('error_api'), 'error');
                 return false;
             }
         },
@@ -453,7 +532,7 @@ document.addEventListener('alpine:init', () => {
                 }
                 return false;
             } catch (e) {
-                alert(Alpine.store('i18n').t('error_api'));
+                Alpine.store('ui').notify(Alpine.store('i18n').t('error_api'), 'error');
                 return false;
             }
         }
@@ -500,7 +579,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async deleteItem(id) {
-            if (!confirm('Oublier cet article pour toujours ?')) return;
+            if (!await Alpine.store('ui').confirm('Oublier cet article pour toujours ?')) return;
             try {
                 const res = await fetch(`${API_URL}/grocery-list/library/${id}`, { method: 'DELETE' });
                 if (res.ok) Alpine.store('grocery').fetchLibrary();
@@ -528,7 +607,7 @@ document.addEventListener('alpine:init', () => {
                 // Update Logic
                 if (await Alpine.store('grocery').updateLibraryItem(this.editingId, this.newItem)) {
                     this.showAdd = false;
-                    alert("Produit mis à jour !");
+                    Alpine.store('ui').notify("Produit mis à jour !");
                     this.newItem = { name: '', category: 'Divers', default_unit: '' };
                 }
             } else {
@@ -547,7 +626,7 @@ document.addEventListener('alpine:init', () => {
                 };
                 if (await Alpine.store('grocery').addManual(toAdd)) {
                     this.showAdd = false;
-                    alert("Produit créé !");
+                    Alpine.store('ui').notify("Produit créé !");
                     this.newItem = { name: '', category: 'Divers', default_unit: '' }; // Reset
                 }
             }
@@ -582,7 +661,7 @@ document.addEventListener('alpine:init', () => {
                 this.items = await res.json();
             } catch (e) {
                 console.error(e);
-                alert("Erreur Technique: " + e.message);
+                Alpine.store('ui').notify("Erreur Technique: " + e.message, 'error');
             } finally {
                 this.loading = false;
             }
@@ -604,15 +683,15 @@ document.addEventListener('alpine:init', () => {
         },
 
         async finishShopping() {
-            if (!confirm("Cela va vider la liste actuelle et marquer les repas comme 'Achetés'. Continuer ?")) return;
+            if (!await Alpine.store('ui').confirm("Cela va vider la liste actuelle et marquer les repas comme 'Achetés'. Continuer ?")) return;
             try {
                 const res = await fetch(`${API_URL}/grocery-list/checkout?start=${this.startDate}&end=${this.endDate}`, { method: 'POST' });
                 if (res.ok) {
-                    alert("Liste archivée avec succès !");
+                    Alpine.store('ui').notify("Liste archivée avec succès !");
                     this.generateList();
                 } else {
                     const err = await res.text();
-                    alert("Erreur serveur: " + err);
+                    Alpine.store('ui').notify("Erreur serveur: " + err, 'error');
                 }
             } catch (e) {
                 alert("Erreur technique: " + e.message);
