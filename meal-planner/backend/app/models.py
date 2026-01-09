@@ -43,7 +43,7 @@ class User(Base):
     full_name = Column(String(255), nullable=True)
     profile_picture_url = Column(String(500), nullable=True)
     
-    recipe = relationship("Recipe", back_populates="author")
+    recipes = relationship("Recipe", back_populates="author")
 
 class RecipeIngredient(Base):
     __tablename__ = "recipe_ingredients"
