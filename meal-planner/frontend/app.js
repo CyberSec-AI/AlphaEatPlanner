@@ -192,7 +192,15 @@ document.addEventListener('alpine:init', () => {
     });
 
     Alpine.store('i18n', {
-        lang: localStorage.getItem('app_lang') || 'fr',
+        lang: 'fr', // Strict default
+        init() {
+            const saved = localStorage.getItem('app_lang');
+            if (saved === 'en' || saved === 'fr') {
+                this.lang = saved;
+            } else {
+                localStorage.setItem('app_lang', 'fr');
+            }
+        },
         t(key) { return TRANSLATIONS[this.lang][key] || key; },
         toggle() {
             this.lang = this.lang === 'en' ? 'fr' : 'en';

@@ -7,7 +7,7 @@
     <title>Mes Recettes - EatPlanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="app.js?v=15"></script>
+    <script src="app.js?v=16"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
@@ -325,6 +325,12 @@
                             class="w-20 border bg-slate-50 border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                         <input type="text" x-model="newIng.unit" placeholder="Unit"
                             class="w-20 border bg-slate-50 border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <select x-model="newIng.variant_mode"
+                            class="w-32 border bg-slate-50 border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="all">Tous</option>
+                            <option value="standard">Standard</option>
+                            <option value="vegetarian">Végétarien</option>
+                        </select>
                         <button @click="addIngredient()"
                             class="bg-slate-800 hover:bg-slate-900 text-white w-12 rounded-xl flex items-center justify-center transition shadow-lg shadow-slate-200">+</button>
                     </div>
@@ -333,7 +339,10 @@
                             <li
                                 class="flex justify-between items-center text-sm bg-slate-50 p-2.5 rounded-lg border border-slate-100 group">
                                 <span class="flex items-center gap-2 text-slate-700">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                    <span class="text-sm" x-show="ing.variant_mode === 'standard'">🍖</span>
+                                    <span class="text-sm" x-show="ing.variant_mode === 'vegetarian'">🌿</span>
+                                    <span class="text-sm"
+                                        x-show="!ing.variant_mode || ing.variant_mode === 'all'">♾️</span>
                                     <span class="font-bold text-emerald-700"
                                         x-text="ing.quantity + '' + ing.unit"></span> <span x-text="ing.name"></span>
                                 </span>
