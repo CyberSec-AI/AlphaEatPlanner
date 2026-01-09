@@ -679,7 +679,10 @@ document.addEventListener('alpine:init', () => {
             this.loading = true;
             try {
                 const res = await fetch(`${API_URL}/grocery-list/?start=${this.startDate}&end=${this.endDate}`);
-                if (!res.ok) throw new Error('Failed');
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || 'Erreur Serveur (Status ' + res.status + ')');
+                }
                 this.items = await res.json();
             } catch (e) {
                 console.error(e);
