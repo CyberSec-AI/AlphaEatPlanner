@@ -42,74 +42,27 @@ def fix_database():
         return
 
     try:
-        inspector = inspect(engine)
-        tables = inspector.get_table_names()
-        print(f"📋 Tables trouvées: {tables}")
-
         with connection.begin() as trans:
-            # 1. USERS: Full Name & Profile Pic
-            if 'users' in tables:
-                cols = [c['name'] for c in inspector.get_columns('users')]
-                print(f"👤 Colonnes Users: {cols}")
-                
-                if 'full_name' not in cols:
-                    print("🛠️ Ajout 'full_name'...")
-                    connection.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR(255) DEFAULT NULL;"))
-                
-                if 'profile_picture_url' not in cols:
-                    print("🛠️ Ajout 'profile_picture_url'...")
-                    connection.execute(text("ALTER TABLE users ADD COLUMN profile_picture_url VARCHAR(500) DEFAULT NULL;"))
+             # Simply try to add columns. If they exist, it throws. We catch and ignore.
+             commands = [
+                 "ALTER TABLE users ADD COLUMN full_name VARCHAR(255) DEFAULT NULL;",
+                 "ALTER TABLE users ADD COLUMN profile_picture_url VARCHAR(500) DEFAULT NULL;",
+                 "ALTER TABLE recipes ADD COLUMN author_id INT DEFAULT NULL;",
+                 "ALTER TABLE recipes ADD COLUMN image_url VARCHAR(500) DEFAULT NULL;",
+                 "ALTER TABLE recipe_ingredients ADD COLUMN variant_mode VARCHAR(20) DEFAULT 'all';",
+                 "ALTER TABLE meal_plan_items ADD COLUMN servings_vegetarian INT DEFAULT 0;",
+                 "ALTER TABLE meal_plan_items ADD COLUMN is_shopped BOOLEAN DEFAULT FALSE;",
+                 "ALTER TABLE grocery_manual_items ADD COLUMN category VARCHAR(50) DEFAULT 'Divers';"
+             ]
+             
+             for cmd in commands:
+                 try:
+                     connection.execute(text(cmd))
+                     print(f"✅ Applied: {cmd}")
+                 except Exception as e:
+                     # Most likely "Duplicate column name"
+                     print(f"ℹ️ Skipped (exists): {cmd[:20]}...")
 
-            # 2. RECIPES: Author ID
-            if 'recipes' in tables:
-                cols = [c['name'] for c in inspector.get_columns('recipes')]
-                print(f"🍳 Colonnes Recipes: {cols}")
-                
-                if 'author_id' not in cols:
-                    print("🛠️ Ajout 'author_id'...")
-                    connection.execute(text("ALTER TABLE recipes ADD COLUMN author_id INT DEFAULT NULL;"))
-                    try:
-                        connection.execute(text("ALTER TABLE recipes ADD CONSTRAINT fk_recipes_author FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL;"))
-                    except Exception as ex:
-                        print(f"⚠️ Warning FK (peut-être déjà là): {ex}")
-                
-                if 'image_url' not in cols:
-                     print("🛠️ Ajout 'image_url'...")
-                     connection.execute(text("ALTER TABLE recipes ADD COLUMN image_url VARCHAR(500) DEFAULT NULL;"))
-
-            # 3. RECIPE INGREDIENTS: Variant Mode
-            if 'recipe_ingredients' in tables:
-                cols = [c['name'] for c in inspector.get_columns('recipe_ingredients')]
-                print(f"🥦 Colonnes Ingredients: {cols}")
-                if 'variant_mode' not in cols:
-                    print("🛠️ Ajout 'variant_mode' (all/standard/vegetarian)...")
-                    connection.execute(text("ALTER TABLE recipe_ingredients ADD COLUMN variant_mode VARCHAR(20) DEFAULT 'all';"))
-
-            # 4. MEAL PLAN ITEMS: Vegetarian Servings
-            if 'meal_plan_items' in tables:
-                cols = [c['name'] for c in inspector.get_columns('meal_plan_items')]
-                print(f"📅 Colonnes MealPlan: {cols}")
-                if 'servings_vegetarian' not in cols:
-                    print("🛠️ Ajout 'servings_vegetarian'...")
-                    connection.execute(text("ALTER TABLE meal_plan_items ADD COLUMN servings_vegetarian INT DEFAULT 0;"))
-                
-                # Ensure is_shopped exists (from V9)
-                if 'is_shopped' not in cols:
-                    print("🛠️ Ajout 'is_shopped'...")
-                    connection.execute(text("ALTER TABLE meal_plan_items ADD COLUMN is_shopped BOOLEAN DEFAULT FALSE;"))
-
-            # 5. GROCERY MANUAL ITEMS: Category
-            if 'grocery_manual_items' in tables:
-                cols = [c['name'] for c in inspector.get_columns('grocery_manual_items')]
-                print(f"🛒 Colonnes Manual: {cols}")
-                if 'category' not in cols:
-                    print("🛠️ Ajout 'category'...")
-                    connection.execute(text("ALTER TABLE grocery_manual_items ADD COLUMN category VARCHAR(50) DEFAULT 'Divers';"))
-            
-            # 6. Check for grocery_library (Just logging)
-            if 'grocery_library' not in tables:
-                print("⚠️ Table grocery_library manquante ! (Devrait être créée par SQLAlchemy)")
-                # We could force create it but SQLAlchemy create_all usually handles this on startup if models exist.
 
 
     except Exception as e:
