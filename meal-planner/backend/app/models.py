@@ -17,6 +17,7 @@ class Recipe(Base):
     _tags = Column("tags", Text, nullable=True) # Storing as JSON string for simplicity in MySQL 8
 
     ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
+    steps = relationship("RecipeStep", back_populates="recipe", cascade="all, delete-orphan")
     meal_plan_items = relationship("MealPlanItem", back_populates="recipe")
     
     author_id = Column(Integer, ForeignKey("users.id"))
@@ -56,6 +57,16 @@ class RecipeIngredient(Base):
     variant_mode = Column(String(20), default='all') # 'all', 'standard', 'vegetarian'
 
     recipe = relationship("Recipe", back_populates="ingredients")
+
+class RecipeStep(Base):
+    __tablename__ = "recipe_steps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recipe_id = Column(Integer, ForeignKey("recipes.id"))
+    step_order = Column(Integer)
+    instruction = Column(Text)
+
+    recipe = relationship("Recipe", back_populates="steps")
 
 
 class MealPlanItem(Base):

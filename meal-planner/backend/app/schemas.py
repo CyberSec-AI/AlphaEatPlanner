@@ -20,6 +20,21 @@ class Ingredient(IngredientBase):
     class Config:
         from_attributes = True
 
+# Step Schemas
+class StepBase(BaseModel):
+    step_order: int
+    instruction: str
+
+class StepCreate(StepBase):
+    pass
+
+class Step(StepBase):
+    id: int
+    recipe_id: int
+    
+    class Config:
+        from_attributes = True
+
 # Recipe Schemas
 class UserBase(BaseModel):
     username: str
@@ -51,13 +66,16 @@ class RecipeBase(BaseModel):
 
 class RecipeCreate(RecipeBase):
     ingredients: List[IngredientCreate] = []
+    steps: List[StepCreate] = []
 
 class RecipeUpdate(RecipeBase):
     ingredients: Optional[List[IngredientCreate]] = None
+    steps: Optional[List[StepCreate]] = None
 
 class Recipe(RecipeBase):
     id: int
     ingredients: List[Ingredient] = []
+    steps: List[Step] = []
     author: Optional[User] = None  # Return author info
     
     class Config:

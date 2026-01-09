@@ -145,10 +145,11 @@ document.addEventListener('alpine:init', () => {
             } catch (e) { }
         },
         logout() {
+            console.log("Logging out...");
             this.token = null;
             this.user = null;
             localStorage.removeItem('token');
-            window.location.href = 'login.html';
+            window.location.replace('login.html'); // Use replace to prevent back button
         },
         check() {
             if (!this.token && !window.location.href.includes('login.html')) {
@@ -194,14 +195,20 @@ document.addEventListener('alpine:init', () => {
     Alpine.store('i18n', {
         lang: 'fr', // Strict default
         init() {
-            const saved = localStorage.getItem('app_lang');
-            if (saved === 'en' || saved === 'fr') {
-                this.lang = saved;
+            let saved = localStorage.getItem('app_lang');
+            if (saved) {
+                saved = saved.toLowerCase(); // Force lowercase
+                if (saved === 'en' || saved === 'fr') {
+                    this.lang = saved;
+                }
             } else {
                 localStorage.setItem('app_lang', 'fr');
             }
         },
-        t(key) { return TRANSLATIONS[this.lang][key] || key; },
+        t(key) {
+            const dict = TRANSLATIONS[this.lang] || TRANSLATIONS['fr'];
+            return dict[key] || key;
+        },
         toggle() {
             this.lang = this.lang === 'en' ? 'fr' : 'en';
             localStorage.setItem('app_lang', this.lang);
@@ -737,7 +744,7 @@ document.addEventListener('alpine:init', () => {
 
     Alpine.data('recipesPage', () => ({
         showModal: false,
-        newRecipe: { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] },
+        newRecipe: { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [], steps: [] },
         newIng: { name: '', quantity: 1, unit: '', variant_mode: 'all' },
         editMode: false,
         editingId: null,
@@ -747,7 +754,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         openAddModal() {
-            this.newRecipe = { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] };
+            this.newRecipe = { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [], steps: [] };
             this.newIng = { name: '', quantity: 1, unit: '', variant_mode: 'all' };
             this.editMode = false;
             this.editingId = null;
@@ -757,6 +764,7 @@ document.addEventListener('alpine:init', () => {
         openEditModal(recipe) {
             // Deep copy to avoid mutating store directly
             this.newRecipe = JSON.parse(JSON.stringify(recipe));
+            if (!this.newRecipe.steps) this.newRecipe.steps = []; // Ensure steps array exists
             this.newIng = { name: '', quantity: 1, unit: '', variant_mode: 'all' }; // Reset newIng
             this.editMode = true;
             this.editingId = recipe.id;
@@ -774,7 +782,19 @@ document.addEventListener('alpine:init', () => {
             this.newRecipe.ingredients.splice(index, 1);
         },
 
+        addStep() {
+            // Push new step with calculated order (though backend handles order mostly, we send order just in case or derived from index)
+            this.newRecipe.steps.push({ step_order: this.newRecipe.steps.length + 1, instruction: '' });
+        },
+
+        removeStep(index) {
+            this.newRecipe.steps.splice(index, 1);
+        },
+
         async submitRecipe() {
+            // Normalize steps order before sending
+            this.newRecipe.steps.forEach((s, i) => s.step_order = i + 1);
+
             let success = false;
             if (this.editMode && this.editingId) {
                 success = await Alpine.store('recipes').update(this.editingId, this.newRecipe);
@@ -784,7 +804,7 @@ document.addEventListener('alpine:init', () => {
 
             if (success) {
                 this.showModal = false;
-                this.newRecipe = { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [] };
+                this.newRecipe = { title: '', description: '', default_servings: 2, is_vegetarian: false, tags: [], ingredients: [], steps: [] };
                 this.editMode = false;
                 this.editingId = null;
             }

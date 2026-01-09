@@ -35,6 +35,14 @@ def create_recipe(db: Session, recipe: schemas.RecipeCreate, author_id: Optional
             variant_mode=ingredient.variant_mode
         )
         db.add(db_ingredient)
+
+    for step in recipe.steps:
+        db_step = models.RecipeStep(
+            recipe_id=db_recipe.id,
+            step_order=step.step_order,
+            instruction=step.instruction
+        )
+        db.add(db_step)
     
     db.commit()
     db.refresh(db_recipe)
@@ -69,6 +77,18 @@ def update_recipe(db: Session, recipe_id: int, recipe_update: schemas.RecipeUpda
             )
             db.add(db_ing)
             
+    if recipe_update.steps is not None:
+        # Delete existing
+        db.query(models.RecipeStep).filter(models.RecipeStep.recipe_id == recipe_id).delete()
+        # Add new
+        for step in recipe_update.steps:
+            db_step = models.RecipeStep(
+                recipe_id=recipe_id,
+                step_order=step.step_order,
+                instruction=step.instruction
+            )
+            db.add(db_step)
+
     db.commit()
     db.refresh(db_recipe)
     return db_recipe
