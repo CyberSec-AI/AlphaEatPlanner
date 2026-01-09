@@ -28,14 +28,14 @@ def generate_grocery_list(db: Session, start_date: date, end_date: date) -> List
 
         # Ratios
         # Ratios
-        std_servings = Decimal(item.servings or 0)
+        total_servings = Decimal(item.servings or 0)
         veg_servings = Decimal(item.servings_vegetarian or 0)
-        base_servings = Decimal(recipe.default_servings or 1)
-
-        # Ratio for ingredients tagged as 'all' or 'standard' using standard servings
-        # Actually 'all' uses std + veg
         
-        total_servings = std_servings + veg_servings
+        # Standard is the remainder
+        std_servings = total_servings - veg_servings
+        if std_servings < 0: std_servings = Decimal(0)
+
+        base_servings = Decimal(recipe.default_servings or 1)
         
         ratio_all = total_servings / base_servings
         ratio_std = std_servings / base_servings

@@ -692,14 +692,33 @@ document.addEventListener('alpine:init', () => {
         async submitItem() {
             if (!this.newItem.recipe_id) return;
 
-            // If mixed mode is off, zero out vegetarian servings just in case
-            if (!this.newItem.is_mixed) this.newItem.servings_vegetarian = 0;
+            const recipe = Alpine.store('recipes').list.find(r => r.id == this.newItem.recipe_id);
+            const isRecipeVeg = recipe ? recipe.is_vegetarian : false;
+
+            let totalServings = parseInt(this.newItem.servings) || 0; // Contains Standard count if mixed, or Total if not
+            let vegServings = parseInt(this.newItem.servings_vegetarian) || 0;
+
+            if (this.newItem.is_mixed) {
+                // In mixed mode: input 'servings' is treated as Standard count
+                // input 'servings_vegetarian' is Veg count
+                // Total = Standard + Veg
+                const stdCount = totalServings;
+                totalServings = stdCount + vegServings;
+            } else {
+                // Not mixed
+                // If the recipe itself is vegetarian, then ALL servings are vegetarian
+                if (isRecipeVeg) {
+                    vegServings = totalServings;
+                } else {
+                    vegServings = 0;
+                }
+            }
 
             const payload = {
                 date: this.selectedDate,
                 recipe_id: parseInt(this.newItem.recipe_id),
-                servings: parseInt(this.newItem.servings),
-                servings_vegetarian: parseInt(this.newItem.servings_vegetarian),
+                servings: totalServings,
+                servings_vegetarian: vegServings,
                 meal_type: this.newItem.meal_type
             };
 

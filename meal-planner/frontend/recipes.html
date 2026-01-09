@@ -362,16 +362,10 @@
                                         newIng.variant_mode = activeTab; 
                                         addIngredient();
                                     ">
-
-                                <button @click="
-                                        newIng.variant_mode = activeTab; 
-                                        addIngredient();
-                                    "
-                                    class="bg-slate-800 hover:bg-slate-900 text-white w-12 rounded-xl flex items-center justify-center transition shadow-lg shadow-slate-200 transform active:scale-95">+</button>
                             </div>
 
                             <!-- List (Filtered by Tab) -->
-                            <ul class="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar min-h-[100px]">
+                            <ul class="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar min-h-[100px] mb-4">
                                 <template x-for="(ing, idx) in newRecipe.ingredients" :key="idx">
                                     <li x-show="(ing.variant_mode || 'all') === activeTab"
                                         class="flex justify-between items-center text-sm bg-white p-3 rounded-xl border border-slate-100 shadow-sm group hover:border-emerald-200 transition">
@@ -405,6 +399,15 @@
                                     Aucun ingrédient dans cette catégorie.
                                 </div>
                             </ul>
+
+                            <button @click="
+                                     newIng.variant_mode = activeTab; 
+                                     addIngredient();
+                                 "
+                                class="w-full border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white rounded-xl py-3 font-bold transition flex items-center justify-center gap-2 group">
+                                <span class="text-xl group-hover:rotate-90 transition-transform">+</span> Ajouter
+                                l'ingrédient
+                            </button>
                         </div>
                     </div>
                 </div>
